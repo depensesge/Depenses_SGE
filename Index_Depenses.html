@@ -235,13 +235,13 @@
 const { useState, useRef, useEffect } = React;
 
 const DEFAULT_CATS = [
-  { id:"food",      label:"Alimentation", icon:"🍽️", color:"#3B82F6" },
-  { id:"transport", label:"Transport",    icon:"🚗",  color:"#8B5CF6" },
-  { id:"housing",   label:"Logement",     icon:"🏠",  color:"#EC4899" },
-  { id:"health",    label:"Santé",        icon:"💊",  color:"#10B981" },
-  { id:"leisure",   label:"Loisirs",      icon:"🎬",  color:"#F59E0B" },
-  { id:"shopping",  label:"Shopping",     icon:"🛍️", color:"#EF4444" },
-  { id:"other",     label:"Autre",        icon:"📦",  color:"#64748B" },
+  { id:"siege",       label:"Frais Siège",         icon:"🏢", color:"#1D6AE5" },
+  { id:"atelier",     label:"Frais Atelier",        icon:"🔧", color:"#8B5CF6" },
+  { id:"projets",     label:"Frais Projets",        icon:"📋", color:"#10B981" },
+  { id:"essence",     label:"Essence",              icon:"⛽", color:"#F59E0B" },
+  { id:"maintenance", label:"Maintenance Voitures", icon:"🚘", color:"#EF4444" },
+  { id:"deplacement", label:"Déplacements",         icon:"✈️", color:"#06B6D4" },
+  { id:"other",       label:"Autre",                icon:"📦", color:"#64748B" },
 ];
 const COLORS = ["#3B82F6","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#64748B","#06B6D4","#84CC16","#F97316","#6366F1","#14B8A6"];
 const ICONS  = ["🍽️","🚗","🏠","💊","🎬","🛍️","📦","✈️","📚","🎮","⚽","🏋️","💄","🐾","☕","🍕","🛒","💡","📱","🎓","🏦","🎁"];
@@ -269,12 +269,14 @@ const LS = {
 function updateSyncTime(){ const el=document.getElementById("sync-time"); if(el) el.textContent=new Date().toLocaleTimeString("fr-FR"); }
 
 function App() {
-  const [currentUser,   setCurrentUser]   = useState(null);
+  const [currentUser,   setCurrentUser]   = useState(()=>{
+    try { const s=localStorage.getItem("eq_session"); return s?JSON.parse(s):null; } catch { return null; }
+  });
   const [loginStep,     setLoginStep]     = useState(null);
   const [pwInput,       setPwInput]       = useState("");
   const [pwError,       setPwError]       = useState(false);
   const [users,         setUsers]         = useState(()=>LS.get("eq_users",DEFAULT_USERS));
-  const [categories,    setCategories]    = useState(()=>LS.get("eq_cats",DEFAULT_CATS));
+  const [categories,    setCategories]    = useState(DEFAULT_CATS);
   const [expenses,      setExpenses]      = useState(()=>LS.get("eq_expenses",[]));
   const [view,          setView]          = useState("dashboard");
   const [filterStatus,  setFilterStatus]  = useState("all");
@@ -285,21 +287,100 @@ function App() {
   const [rejectId,      setRejectId]      = useState(null);
   const [rejectNote,    setRejectNote]    = useState("");
   const [toast,         setToast]         = useState(null);
-  const [form, setForm] = useState({label:"",amount:"",category:"food",date:new Date().toISOString().slice(0,10),note:""});
+  const [form, setForm] = useState({label:"",amount:"",category:"siege",date:new Date().toISOString().slice(0,10),note:""});
   const nextId    = useRef(LS.get("eq_nextid",500));
   const nextCatId = useRef(600);
   const isAdmin = currentUser?.role==="admin";
 
+  // Force push new categories on login
+  useEffect(()=>{
+    if(!currentUser) return;
+    db.ref("eq_cats").set(DEFAULT_CATS);
+    LS.set("eq_cats", DEFAULT_CATS);
+  },[currentUser]);
+
   useEffect(()=>{
     if(!currentUser) return;
     const refs=[];
-    const er=db.ref("eq_expenses"); er.on("value",s=>{if(s.exists())setExpenses(s.val());}); refs.push(er);
-    const cr=db.ref("eq_cats");     cr.on("value",s=>{if(s.exists())setCategories(s.val());}); refs.push(cr);
-    const ur=db.ref("eq_users");    ur.on("value",s=>{if(s.exists())setUsers(s.val());}); refs.push(ur);
+
+    // Expenses — realtime, reconnect on disconnect
+    const er=db.ref("eq_expenses");
+    er.on("value", s=>{
+      if(s.exists()) {
+        const val = s.val();
+        const arr = Array.isArray(val) ? val : Object.values(val);
+        setExpenses(arr.filter(e=>e&&e.id));
+      } else {
+        setExpenses([]);
+      }
+    }, err=>console.warn("Firebase expenses error:", err));
+    refs.push(er);
+
+    // Categories
+    const cr=db.ref("eq_cats");
+    cr.on("value", s=>{ if(s.exists()) setCategories(Array.isArray(s.val()) ? s.val() : Object.values(s.val())); },
+      err=>console.warn("Firebase cats error:", err));
+    refs.push(cr);
+
+    // Users
+    const ur=db.ref("eq_users");
+    ur.on("value", s=>{ if(s.exists()) setUsers(Array.isArray(s.val()) ? s.val() : Object.values(s.val())); },
+      err=>console.warn("Firebase users error:", err));
+    refs.push(ur);
+
+    // Keep connection alive on mobile (prevents Firebase from going offline)
+    const connRef=db.ref(".info/connected");
+    connRef.on("value", s=>{
+      const el=document.getElementById("sync-time");
+      if(el) el.textContent = s.val() ? new Date().toLocaleTimeString("fr-FR") : "reconnexion...";
+    });
+    refs.push(connRef);
+
     return ()=>refs.forEach(r=>r.off());
   },[currentUser]);
 
-  const saveExp  = v=>{ setExpenses(v);   LS.set("eq_expenses",v); LS.set("eq_nextid",nextId.current); };
+  // Aggressive sync: poll every 5s + refresh when page becomes visible
+  useEffect(()=>{
+    if(!currentUser) return;
+
+    function fetchAll() {
+      db.ref("eq_expenses").once("value").then(s=>{
+        if(s.exists()) {
+          const val = s.val();
+          const arr = Array.isArray(val) ? val : Object.values(val);
+          setExpenses(arr.filter(e=>e&&e.id));
+        }
+      }).catch(()=>{});
+    }
+
+    // Poll every 5s
+    const iv = setInterval(fetchAll, 5000);
+
+    // Re-fetch when user comes back to the tab/app (mobile background → foreground)
+    function onVisible() { if(document.visibilityState==="visible") fetchAll(); }
+    document.addEventListener("visibilitychange", onVisible);
+
+    // Re-fetch when network reconnects
+    function onOnline() { fetchAll(); }
+    window.addEventListener("online", onOnline);
+
+    return ()=>{
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
+    };
+  },[currentUser?.id]);
+
+  const saveExp  = v=>{
+    const arr = Array.isArray(v) ? v : Object.values(v);
+    setExpenses(arr);
+    // Store as object keyed by id for Firebase (avoids array→object conversion issues)
+    const obj = {};
+    arr.forEach(e=>{ obj[e.id] = e; });
+    try { db.ref("eq_expenses").set(obj); updateSyncTime(); } catch {}
+    try { localStorage.setItem("eq_expenses", JSON.stringify(arr)); } catch {}
+    try { localStorage.setItem("eq_nextid", nextId.current); } catch {}
+  };
   const saveCats = v=>{ setCategories(v); LS.set("eq_cats",v); };
   const saveUsrs = v=>{ setUsers(v);      LS.set("eq_users",v); };
   const getCat   = id=>categories.find(c=>c.id===id)||{label:"Autre",icon:"📦",color:"#64748B"};
@@ -386,10 +467,10 @@ function App() {
                 <label className="form-label">Mot de passe</label>
                 <input autoFocus type="password" className={`form-input ${pwError?"error":""}`} placeholder="••••••••"
                   value={pwInput} onChange={e=>{setPwInput(e.target.value);setPwError(false);}}
-                  onKeyDown={e=>{ if(e.key==="Enter"){ if(pwInput===loginStep.password){setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}}/>
+                  onKeyDown={e=>{ if(e.key==="Enter"){ if(pwInput===loginStep.password){localStorage.setItem("eq_session",JSON.stringify(loginStep));setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}}/>
                 {pwError && <div style={{color:"#EF4444",fontSize:12,marginTop:6}}>Mot de passe incorrect. Réessayez.</div>}
               </div>
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>{ if(pwInput===loginStep.password){setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>{ if(pwInput===loginStep.password){localStorage.setItem("eq_session",JSON.stringify(loginStep));setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}>
                 Se connecter →
               </button>
             </>
@@ -441,7 +522,7 @@ function App() {
               <div className="user-role">{isAdmin?"Admin":"Membre"}</div>
             </div>
           </div>
-          <button className="logout-btn" onClick={()=>setCurrentUser(null)}>⏏ Déconnexion</button>
+          <button className="logout-btn" onClick={()=>{localStorage.removeItem("eq_session");setCurrentUser(null);}}>⏏ Déconnexion</button>
         </div>
       </nav>
 
@@ -684,7 +765,7 @@ function App() {
       {/* SYNC BAR */}
       <div id="sync-bar">
         <span className="sync-dot"/>
-        Firebase · Synchronisé · Dernière mise à jour : <span id="sync-time">—</span>
+        Firebase · Temps réel · <span id="sync-time">en attente...</span>
       </div>
 
       {/* ── ADD EXPENSE MODAL ── */}
