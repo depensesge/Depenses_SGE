@@ -332,14 +332,33 @@ function App() {
     return ()=>refs.forEach(r=>r.off());
   },[currentUser]);
 
-  // Fallback: refresh data every 15s in case websocket drops on mobile
+  // Aggressive sync: poll every 5s + refresh when page becomes visible
   useEffect(()=>{
     if(!currentUser) return;
-    const iv = setInterval(()=>{
-      db.ref("eq_expenses").once("value").then(s=>{ if(s.exists()) setExpenses(Array.isArray(s.val())?s.val():Object.values(s.val())); });
-    }, 15000);
-    return ()=>clearInterval(iv);
-  },[currentUser]);
+
+    function fetchAll() {
+      db.ref("eq_expenses").once("value").then(s=>{
+        if(s.exists()) setExpenses(Array.isArray(s.val())?s.val():Object.values(s.val()));
+      }).catch(()=>{});
+    }
+
+    // Poll every 5s
+    const iv = setInterval(fetchAll, 5000);
+
+    // Re-fetch when user comes back to the tab/app (mobile background → foreground)
+    function onVisible() { if(document.visibilityState==="visible") fetchAll(); }
+    document.addEventListener("visibilitychange", onVisible);
+
+    // Re-fetch when network reconnects
+    function onOnline() { fetchAll(); }
+    window.addEventListener("online", onOnline);
+
+    return ()=>{
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
+    };
+  },[currentUser?.id]);
 
   const saveExp  = v=>{ setExpenses(v);   LS.set("eq_expenses",v); LS.set("eq_nextid",nextId.current); };
   const saveCats = v=>{ setCategories(v); LS.set("eq_cats",v); };
