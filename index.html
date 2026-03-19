@@ -305,8 +305,15 @@ function App() {
 
     // Expenses — realtime, reconnect on disconnect
     const er=db.ref("eq_expenses");
-    er.on("value", s=>{ setExpenses(s.exists() ? (Array.isArray(s.val()) ? s.val() : Object.values(s.val())) : []); },
-      err=>console.warn("Firebase expenses error:", err));
+    er.on("value", s=>{
+      if(s.exists()) {
+        const val = s.val();
+        const arr = Array.isArray(val) ? val : Object.values(val);
+        setExpenses(arr.filter(e=>e&&e.id));
+      } else {
+        setExpenses([]);
+      }
+    }, err=>console.warn("Firebase expenses error:", err));
     refs.push(er);
 
     // Categories
@@ -338,7 +345,11 @@ function App() {
 
     function fetchAll() {
       db.ref("eq_expenses").once("value").then(s=>{
-        if(s.exists()) setExpenses(Array.isArray(s.val())?s.val():Object.values(s.val()));
+        if(s.exists()) {
+          const val = s.val();
+          const arr = Array.isArray(val) ? val : Object.values(val);
+          setExpenses(arr.filter(e=>e&&e.id));
+        }
       }).catch(()=>{});
     }
 
@@ -360,7 +371,16 @@ function App() {
     };
   },[currentUser?.id]);
 
-  const saveExp  = v=>{ setExpenses(v);   LS.set("eq_expenses",v); LS.set("eq_nextid",nextId.current); };
+  const saveExp  = v=>{
+    const arr = Array.isArray(v) ? v : Object.values(v);
+    setExpenses(arr);
+    // Store as object keyed by id for Firebase (avoids array→object conversion issues)
+    const obj = {};
+    arr.forEach(e=>{ obj[e.id] = e; });
+    try { db.ref("eq_expenses").set(obj); updateSyncTime(); } catch {}
+    try { localStorage.setItem("eq_expenses", JSON.stringify(arr)); } catch {}
+    try { localStorage.setItem("eq_nextid", nextId.current); } catch {}
+  };
   const saveCats = v=>{ setCategories(v); LS.set("eq_cats",v); };
   const saveUsrs = v=>{ setUsers(v);      LS.set("eq_users",v); };
   const getCat   = id=>categories.find(c=>c.id===id)||{label:"Autre",icon:"📦",color:"#64748B"};
