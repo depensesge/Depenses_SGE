@@ -235,13 +235,13 @@
 const { useState, useRef, useEffect } = React;
 
 const DEFAULT_CATS = [
-  { id:"food",      label:"Alimentation", icon:"🍽️", color:"#3B82F6" },
-  { id:"transport", label:"Transport",    icon:"🚗",  color:"#8B5CF6" },
-  { id:"housing",   label:"Logement",     icon:"🏠",  color:"#EC4899" },
-  { id:"health",    label:"Santé",        icon:"💊",  color:"#10B981" },
-  { id:"leisure",   label:"Loisirs",      icon:"🎬",  color:"#F59E0B" },
-  { id:"shopping",  label:"Shopping",     icon:"🛍️", color:"#EF4444" },
-  { id:"other",     label:"Autre",        icon:"📦",  color:"#64748B" },
+  { id:"siege",       label:"Frais Siège",         icon:"🏢", color:"#1D6AE5" },
+  { id:"atelier",     label:"Frais Atelier",        icon:"🔧", color:"#8B5CF6" },
+  { id:"projets",     label:"Frais Projets",        icon:"📋", color:"#10B981" },
+  { id:"essence",     label:"Essence",              icon:"⛽", color:"#F59E0B" },
+  { id:"maintenance", label:"Maintenance Voitures", icon:"🚘", color:"#EF4444" },
+  { id:"deplacement", label:"Déplacements",         icon:"✈️", color:"#06B6D4" },
+  { id:"other",       label:"Autre",                icon:"📦", color:"#64748B" },
 ];
 const COLORS = ["#3B82F6","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#64748B","#06B6D4","#84CC16","#F97316","#6366F1","#14B8A6"];
 const ICONS  = ["🍽️","🚗","🏠","💊","🎬","🛍️","📦","✈️","📚","🎮","⚽","🏋️","💄","🐾","☕","🍕","🛒","💡","📱","🎓","🏦","🎁"];
@@ -274,7 +274,7 @@ function App() {
   const [pwInput,       setPwInput]       = useState("");
   const [pwError,       setPwError]       = useState(false);
   const [users,         setUsers]         = useState(()=>LS.get("eq_users",DEFAULT_USERS));
-  const [categories,    setCategories]    = useState(()=>LS.get("eq_cats",DEFAULT_CATS));
+  const [categories,    setCategories]    = useState(DEFAULT_CATS);
   const [expenses,      setExpenses]      = useState(()=>LS.get("eq_expenses",[]));
   const [view,          setView]          = useState("dashboard");
   const [filterStatus,  setFilterStatus]  = useState("all");
@@ -285,10 +285,17 @@ function App() {
   const [rejectId,      setRejectId]      = useState(null);
   const [rejectNote,    setRejectNote]    = useState("");
   const [toast,         setToast]         = useState(null);
-  const [form, setForm] = useState({label:"",amount:"",category:"food",date:new Date().toISOString().slice(0,10),note:""});
+  const [form, setForm] = useState({label:"",amount:"",category:"siege",date:new Date().toISOString().slice(0,10),note:""});
   const nextId    = useRef(LS.get("eq_nextid",500));
   const nextCatId = useRef(600);
   const isAdmin = currentUser?.role==="admin";
+
+  // Force push new categories on login
+  useEffect(()=>{
+    if(!currentUser) return;
+    db.ref("eq_cats").set(DEFAULT_CATS);
+    LS.set("eq_cats", DEFAULT_CATS);
+  },[currentUser]);
 
   useEffect(()=>{
     if(!currentUser) return;
