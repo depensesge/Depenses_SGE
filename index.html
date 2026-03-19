@@ -269,7 +269,9 @@ const LS = {
 function updateSyncTime(){ const el=document.getElementById("sync-time"); if(el) el.textContent=new Date().toLocaleTimeString("fr-FR"); }
 
 function App() {
-  const [currentUser,   setCurrentUser]   = useState(null);
+  const [currentUser,   setCurrentUser]   = useState(()=>{
+    try { const s=localStorage.getItem("eq_session"); return s?JSON.parse(s):null; } catch { return null; }
+  });
   const [loginStep,     setLoginStep]     = useState(null);
   const [pwInput,       setPwInput]       = useState("");
   const [pwError,       setPwError]       = useState(false);
@@ -426,10 +428,10 @@ function App() {
                 <label className="form-label">Mot de passe</label>
                 <input autoFocus type="password" className={`form-input ${pwError?"error":""}`} placeholder="••••••••"
                   value={pwInput} onChange={e=>{setPwInput(e.target.value);setPwError(false);}}
-                  onKeyDown={e=>{ if(e.key==="Enter"){ if(pwInput===loginStep.password){setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}}/>
+                  onKeyDown={e=>{ if(e.key==="Enter"){ if(pwInput===loginStep.password){localStorage.setItem("eq_session",JSON.stringify(loginStep));setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}}/>
                 {pwError && <div style={{color:"#EF4444",fontSize:12,marginTop:6}}>Mot de passe incorrect. Réessayez.</div>}
               </div>
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>{ if(pwInput===loginStep.password){setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>{ if(pwInput===loginStep.password){localStorage.setItem("eq_session",JSON.stringify(loginStep));setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}>
                 Se connecter →
               </button>
             </>
@@ -481,7 +483,7 @@ function App() {
               <div className="user-role">{isAdmin?"Admin":"Membre"}</div>
             </div>
           </div>
-          <button className="logout-btn" onClick={()=>setCurrentUser(null)}>⏏ Déconnexion</button>
+          <button className="logout-btn" onClick={()=>{localStorage.removeItem("eq_session");setCurrentUser(null);}}>⏏ Déconnexion</button>
         </div>
       </nav>
 
