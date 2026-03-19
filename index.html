@@ -300,10 +300,43 @@ function App() {
   useEffect(()=>{
     if(!currentUser) return;
     const refs=[];
-    const er=db.ref("eq_expenses"); er.on("value",s=>{if(s.exists())setExpenses(s.val());}); refs.push(er);
-    const cr=db.ref("eq_cats");     cr.on("value",s=>{if(s.exists())setCategories(s.val());}); refs.push(cr);
-    const ur=db.ref("eq_users");    ur.on("value",s=>{if(s.exists())setUsers(s.val());}); refs.push(ur);
+
+    // Expenses — realtime, reconnect on disconnect
+    const er=db.ref("eq_expenses");
+    er.on("value", s=>{ setExpenses(s.exists() ? (Array.isArray(s.val()) ? s.val() : Object.values(s.val())) : []); },
+      err=>console.warn("Firebase expenses error:", err));
+    refs.push(er);
+
+    // Categories
+    const cr=db.ref("eq_cats");
+    cr.on("value", s=>{ if(s.exists()) setCategories(Array.isArray(s.val()) ? s.val() : Object.values(s.val())); },
+      err=>console.warn("Firebase cats error:", err));
+    refs.push(cr);
+
+    // Users
+    const ur=db.ref("eq_users");
+    ur.on("value", s=>{ if(s.exists()) setUsers(Array.isArray(s.val()) ? s.val() : Object.values(s.val())); },
+      err=>console.warn("Firebase users error:", err));
+    refs.push(ur);
+
+    // Keep connection alive on mobile (prevents Firebase from going offline)
+    const connRef=db.ref(".info/connected");
+    connRef.on("value", s=>{
+      const el=document.getElementById("sync-time");
+      if(el) el.textContent = s.val() ? new Date().toLocaleTimeString("fr-FR") : "reconnexion...";
+    });
+    refs.push(connRef);
+
     return ()=>refs.forEach(r=>r.off());
+  },[currentUser]);
+
+  // Fallback: refresh data every 15s in case websocket drops on mobile
+  useEffect(()=>{
+    if(!currentUser) return;
+    const iv = setInterval(()=>{
+      db.ref("eq_expenses").once("value").then(s=>{ if(s.exists()) setExpenses(Array.isArray(s.val())?s.val():Object.values(s.val())); });
+    }, 15000);
+    return ()=>clearInterval(iv);
   },[currentUser]);
 
   const saveExp  = v=>{ setExpenses(v);   LS.set("eq_expenses",v); LS.set("eq_nextid",nextId.current); };
@@ -691,7 +724,7 @@ function App() {
       {/* SYNC BAR */}
       <div id="sync-bar">
         <span className="sync-dot"/>
-        Firebase · Synchronisé · Dernière mise à jour : <span id="sync-time">—</span>
+        Firebase · Temps réel · <span id="sync-time">en attente...</span>
       </div>
 
       {/* ── ADD EXPENSE MODAL ── */}
