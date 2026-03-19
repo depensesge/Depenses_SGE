@@ -3,438 +3,637 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gestion Dépenses Équipe</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <title>ExpensesPro · Gestion des Dépenses</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDOG7S4hWibxGwVBe59ybUmGuJ0r-tnZxI",
+      authDomain: "gestion-depenses-6bfcc.firebaseapp.com",
+      databaseURL: "https://gestion-depenses-6bfcc-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "gestion-depenses-6bfcc",
+      storageBucket: "gestion-depenses-6bfcc.firebasestorage.app",
+      messagingSenderId: "474872789938",
+      appId: "1:474872789938:web:d3821e317551b8956542ab"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+  </script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0F0F13; font-family: 'DM Mono', 'Courier New', monospace; color: #F0EDE8; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: #1A1A22; }
-    ::-webkit-scrollbar-thumb { background: #3A3A4A; border-radius: 2px; }
-    input, select, textarea { outline: none; font-family: inherit; }
-    button { cursor: pointer; font-family: inherit; border: none; }
-    .fade  { animation: fadeIn .35s ease forwards; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-    .pop   { animation: popIn .5s cubic-bezier(.34,1.56,.64,1) forwards; }
-    @keyframes popIn  { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
-    .sup   { animation: sup .3s ease forwards; }
-    @keyframes sup    { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-    .ucard { transition: all .2s; }
-    .ucard:hover { transform: translateY(-2px); background: #222230 !important; }
-    .row   { transition: background .15s; }
-    .row:hover { background: #1E1E28 !important; }
-    .act   { opacity: 0; transition: opacity .2s; }
-    .row:hover .act { opacity: 1; }
-    .tab   { transition: all .2s; }
-    .tab:hover { opacity: .8; }
-    .fab   { transition: transform .15s, box-shadow .15s; }
-    .fab:hover { transform: scale(1.05); box-shadow: 0 8px 30px rgba(232,132,90,.4); }
-    .pill  { transition: all .2s; }
-    .pill:hover { transform: translateY(-1px); }
-    .cdot  { transition: transform .15s; cursor: pointer; border-radius: 50%; }
-    .cdot:hover { transform: scale(1.2); }
-    .abtn:hover { background: #5AE89B33 !important; }
-    .rbtn:hover { background: #E85A5A33 !important; }
-    #root  { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding-bottom: 90px; }
+    :root {
+      --blue-900: #0F1F3D; --blue-800: #1A3160; --blue-700: #1E4D8C;
+      --blue-600: #1D6AE5; --blue-500: #3B82F6; --blue-400: #60A5FA;
+      --blue-100: #DBEAFE; --blue-50: #EFF6FF;
+      --gray-900: #0F172A; --gray-800: #1E293B; --gray-700: #334155;
+      --gray-600: #475569; --gray-500: #64748B; --gray-400: #94A3B8;
+      --gray-300: #CBD5E1; --gray-200: #E2E8F0; --gray-100: #F1F5F9; --gray-50: #F8FAFC;
+      --green: #10B981; --green-bg: #D1FAE5; --green-text: #065F46;
+      --amber: #F59E0B; --amber-bg: #FEF3C7; --amber-text: #92400E;
+      --red: #EF4444;   --red-bg: #FEE2E2;   --red-text: #991B1B;
+      --white: #FFFFFF;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.08);
+      --radius: 12px; --radius-sm: 8px; --radius-lg: 16px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--gray-50); font-family:'Inter',sans-serif; color:var(--gray-900); min-height:100vh; }
+    input,select,textarea { outline:none; font-family:inherit; }
+    button { cursor:pointer; font-family:inherit; border:none; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:var(--gray-100); }
+    ::-webkit-scrollbar-thumb { background:var(--gray-300); border-radius:3px; }
 
-    /* Bandeau sync */
-    #sync-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #1A1A22; border-top: 1px solid #2A2A38;
-      display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 16px; font-size: 10px; color: #444; z-index: 50; }
-    #sync-bar span { color: #5AE89B; }
+    /* Animations */
+    .fade-in { animation: fadeIn .3s ease forwards; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    .slide-up { animation: slideUp .3s cubic-bezier(.34,1.56,.64,1) forwards; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    .pop { animation: pop .4s cubic-bezier(.34,1.56,.64,1) forwards; }
+    @keyframes pop { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
+
+    /* Layout */
+    #root { display:flex; flex-direction:column; min-height:100vh; }
+
+    /* Sidebar */
+    .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:var(--blue-900); display:flex; flex-direction:column; z-index:100; }
+    .sidebar-logo { padding:28px 24px 20px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .sidebar-logo h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--white); letter-spacing:-.3px; }
+    .sidebar-logo p { font-size:11px; color:rgba(255,255,255,.4); margin-top:3px; letter-spacing:.05em; text-transform:uppercase; }
+    .sidebar-nav { flex:1; padding:16px 12px; display:flex; flex-direction:column; gap:4px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; color:rgba(255,255,255,.55); font-size:13px; font-weight:500; transition:all .2s; position:relative; }
+    .nav-item:hover { background:rgba(255,255,255,.07); color:rgba(255,255,255,.9); }
+    .nav-item.active { background:var(--blue-600); color:var(--white); box-shadow:0 4px 12px rgba(29,106,229,.4); }
+    .nav-item .badge { position:absolute; right:10px; background:var(--red); color:#fff; border-radius:99px; min-width:18px; height:18px; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 5px; }
+    .nav-icon { font-size:16px; width:20px; text-align:center; }
+    .sidebar-footer { padding:16px 12px; border-top:1px solid rgba(255,255,255,.08); }
+    .user-chip { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(255,255,255,.07); }
+    .user-avatar { width:32px; height:32px; border-radius:50%; background:var(--blue-600); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+    .user-name { font-size:13px; font-weight:600; color:var(--white); }
+    .user-role { font-size:10px; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.05em; }
+    .logout-btn { margin-top:8px; width:100%; padding:8px; background:rgba(255,255,255,.05); color:rgba(255,255,255,.5); border-radius:var(--radius-sm); font-size:12px; transition:all .2s; }
+    .logout-btn:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }
+
+    /* Main */
+    .main { margin-left:240px; padding:32px; min-height:100vh; }
+    .page-header { margin-bottom:28px; }
+    .page-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:26px; font-weight:800; color:var(--gray-900); letter-spacing:-.5px; }
+    .page-sub { font-size:13px; color:var(--gray-500); margin-top:4px; }
+
+    /* Cards */
+    .card { background:var(--white); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
+    .card-header { padding:20px 24px 0; }
+    .card-body { padding:20px 24px; }
+    .card-title { font-size:13px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.06em; }
+
+    /* Stat cards */
+    .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+    .stat-card { background:var(--white); border-radius:var(--radius-lg); padding:22px 24px; box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
+    .stat-card.blue { background:var(--blue-600); border-color:var(--blue-600); }
+    .stat-label { font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
+    .stat-card.blue .stat-label { color:rgba(255,255,255,.7); }
+    .stat-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800; color:var(--gray-900); letter-spacing:-.5px; }
+    .stat-card.blue .stat-value { color:var(--white); }
+    .stat-sub { font-size:12px; color:var(--gray-400); margin-top:4px; }
+    .stat-card.blue .stat-sub { color:rgba(255,255,255,.6); }
+
+    /* Table */
+    .table-wrap { overflow:hidden; }
+    table { width:100%; border-collapse:collapse; }
+    th { font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.06em; padding:12px 16px; background:var(--gray-50); border-bottom:1px solid var(--gray-200); text-align:left; }
+    td { padding:14px 16px; border-bottom:1px solid var(--gray-100); font-size:13px; color:var(--gray-700); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--gray-50); }
+    .row-actions { opacity:0; transition:opacity .15s; display:flex; gap:6px; }
+    tr:hover .row-actions { opacity:1; }
+
+    /* Badges */
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:99px; font-size:11px; font-weight:600; }
+    .badge.pending  { background:var(--amber-bg); color:var(--amber-text); }
+    .badge.approved { background:var(--green-bg);  color:var(--green-text); }
+    .badge.rejected { background:var(--red-bg);    color:var(--red-text);   }
+
+    /* Filters */
+    .filters { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+    .filter-btn { padding:6px 14px; border-radius:99px; font-size:12px; font-weight:500; background:var(--white); border:1px solid var(--gray-200); color:var(--gray-600); transition:all .2s; cursor:pointer; }
+    .filter-btn:hover { border-color:var(--blue-500); color:var(--blue-600); }
+    .filter-btn.active { background:var(--blue-600); border-color:var(--blue-600); color:var(--white); }
+    .filter-select { padding:6px 12px; border-radius:99px; font-size:12px; font-weight:500; background:var(--white); border:1px solid var(--gray-200); color:var(--gray-600); cursor:pointer; }
+
+    /* Action buttons */
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; transition:all .2s; cursor:pointer; border:none; }
+    .btn-primary { background:var(--blue-600); color:var(--white); box-shadow:0 2px 8px rgba(29,106,229,.3); }
+    .btn-primary:hover { background:var(--blue-700); box-shadow:0 4px 16px rgba(29,106,229,.4); transform:translateY(-1px); }
+    .btn-ghost { background:transparent; color:var(--gray-600); border:1px solid var(--gray-200); }
+    .btn-ghost:hover { background:var(--gray-50); border-color:var(--gray-300); }
+    .btn-sm { padding:6px 12px; font-size:12px; }
+    .btn-approve { background:var(--green-bg); color:var(--green-text); border:1px solid #A7F3D0; }
+    .btn-approve:hover { background:#A7F3D0; }
+    .btn-reject  { background:var(--red-bg); color:var(--red-text); border:1px solid #FCA5A5; }
+    .btn-reject:hover  { background:#FCA5A5; }
+    .btn-icon { width:32px; height:32px; padding:0; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:14px; }
+
+    /* Cat color dot */
+    .cat-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+
+    /* Bar chart */
+    .bar-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .bar-label { font-size:12px; color:var(--gray-600); width:110px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .bar-track { flex:1; background:var(--gray-100); border-radius:99px; height:8px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:99px; transition:width .8s cubic-bezier(.34,1.56,.64,1); }
+    .bar-amt { font-size:12px; font-weight:600; color:var(--gray-700); width:90px; text-align:right; flex-shrink:0; }
+
+    /* Form */
+    .form-group { margin-bottom:16px; }
+    .form-label { display:block; font-size:12px; font-weight:600; color:var(--gray-600); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
+    .form-input { width:100%; padding:10px 14px; background:var(--gray-50); border:1.5px solid var(--gray-200); border-radius:var(--radius-sm); font-size:13px; color:var(--gray-900); transition:border .2s; }
+    .form-input:focus { border-color:var(--blue-500); background:var(--white); }
+    .form-input.error { border-color:var(--red); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+    /* Modal */
+    .modal-overlay { position:fixed; inset:0; background:rgba(15,31,61,.5); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+    .modal { background:var(--white); border-radius:var(--radius-lg); padding:28px; width:100%; max-width:460px; box-shadow:var(--shadow-lg); }
+    .modal-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:700; color:var(--gray-900); margin-bottom:20px; }
+    .modal-footer { display:flex; gap:10px; margin-top:24px; }
+
+    /* Toast */
+    .toast { position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; z-index:999; box-shadow:var(--shadow-lg); display:flex; align-items:center; gap:8px; }
+
+    /* Login */
+    .login-page { min-height:100vh; display:flex; background:var(--gray-50); }
+    .login-left { width:420px; flex-shrink:0; background:var(--blue-900); display:flex; flex-direction:column; justify-content:center; padding:48px; }
+    .login-right { flex:1; display:flex; align-items:center; justify-content:center; padding:32px; }
+    .login-brand { font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; font-weight:800; color:var(--white); margin-bottom:8px; }
+    .login-tagline { font-size:14px; color:rgba(255,255,255,.5); line-height:1.6; margin-bottom:40px; }
+    .login-feat { display:flex; align-items:center; gap:10px; margin-bottom:14px; color:rgba(255,255,255,.7); font-size:13px; }
+    .login-feat-icon { width:28px; height:28px; background:rgba(255,255,255,.1); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+    .login-card { background:var(--white); border-radius:var(--radius-lg); padding:36px; width:100%; max-width:400px; box-shadow:var(--shadow-lg); border:1px solid var(--gray-200); }
+    .login-card-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; font-weight:800; color:var(--gray-900); margin-bottom:6px; }
+    .login-card-sub { font-size:13px; color:var(--gray-500); margin-bottom:28px; }
+    .profile-grid { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+    .profile-btn { display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:var(--radius-sm); border:1.5px solid var(--gray-200); background:var(--white); cursor:pointer; transition:all .2s; text-align:left; width:100%; }
+    .profile-btn:hover { border-color:var(--blue-500); background:var(--blue-50); }
+    .profile-btn.admin-card { border-color:var(--blue-200); background:var(--blue-50); }
+    .profile-btn.admin-card:hover { border-color:var(--blue-500); background:var(--blue-100); }
+    .profile-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    .profile-avatar.admin { background:var(--blue-100); }
+    .profile-avatar.member { background:var(--gray-100); }
+    .profile-name { font-size:14px; font-weight:600; color:var(--gray-900); }
+    .profile-role { font-size:11px; color:var(--gray-500); margin-top:1px; }
+    .profile-btn.admin-card .profile-role { color:var(--blue-600); font-weight:600; }
+    .profile-arrow { margin-left:auto; color:var(--gray-400); font-size:16px; }
+
+    /* FAB */
+    .fab { position:fixed; bottom:28px; right:28px; width:52px; height:52px; border-radius:50%; background:var(--blue-600); color:var(--white); font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(29,106,229,.4); z-index:200; transition:all .2s; border:none; cursor:pointer; }
+    .fab:hover { transform:scale(1.08); box-shadow:0 8px 28px rgba(29,106,229,.5); }
+
+    /* Sync bar */
+    #sync-bar { position:fixed; bottom:0; left:240px; right:0; background:var(--white); border-top:1px solid var(--gray-200); padding:5px 24px; font-size:11px; color:var(--gray-400); display:flex; align-items:center; gap:6px; z-index:50; }
+    .sync-dot { width:6px; height:6px; background:var(--green); border-radius:50%; }
+
+    /* Team cards */
+    .team-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+    .team-card { background:var(--white); border-radius:var(--radius-lg); padding:20px; box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
+    .team-avatar { width:48px; height:48px; border-radius:50%; background:var(--blue-50); border:2px solid var(--blue-100); display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:12px; }
+    .team-name { font-size:14px; font-weight:700; color:var(--gray-900); }
+    .team-role { font-size:11px; color:var(--gray-500); margin-top:2px; text-transform:uppercase; letter-spacing:.05em; }
+    .team-stat { margin-top:14px; padding-top:14px; border-top:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center; }
+    .team-stat-val { font-size:14px; font-weight:700; color:var(--blue-600); }
+    .team-stat-label { font-size:11px; color:var(--gray-400); }
+
+    /* Color picker */
+    .color-grid { display:flex; gap:8px; flex-wrap:wrap; }
+    .color-swatch { width:28px; height:28px; border-radius:50%; cursor:pointer; transition:transform .15s; border:2px solid transparent; }
+    .color-swatch:hover { transform:scale(1.15); }
+    .color-swatch.selected { border-color:var(--gray-900); transform:scale(1.1); }
+
+    /* Icon picker */
+    .icon-grid { display:flex; flex-wrap:wrap; gap:4px; max-height:140px; overflow-y:auto; background:var(--gray-50); border-radius:var(--radius-sm); padding:8px; }
+    .icon-btn { font-size:20px; padding:6px 8px; border-radius:6px; cursor:pointer; background:none; border:none; transition:background .15s; }
+    .icon-btn:hover { background:var(--gray-200); }
+    .icon-btn.selected { background:var(--blue-100); }
+
+    /* Responsive */
+    @media (max-width:768px) {
+      .sidebar { display:none; }
+      .main { margin-left:0; padding:16px; }
+      .stats-grid { grid-template-columns:1fr; }
+      .login-left { display:none; }
+      #sync-bar { left:0; }
+    }
   </style>
 </head>
 <body>
 <div id="root"></div>
-<div id="sync-bar">🔄 Données stockées localement — <span id="sync-status">en ligne</span> · Dernière synchro : <span id="sync-time">—</span></div>
 
 <script type="text/babel">
 const { useState, useRef, useEffect } = React;
 
-// ── Constants ────────────────────────────────────────────────────────────────
 const DEFAULT_CATS = [
-  { id:"food",      label:"Alimentation", icon:"🍽️", color:"#E8845A" },
-  { id:"transport", label:"Transport",    icon:"🚗",  color:"#5A9BE8" },
-  { id:"housing",   label:"Logement",     icon:"🏠",  color:"#8B5AE8" },
-  { id:"health",    label:"Santé",        icon:"💊",  color:"#5AE89B" },
-  { id:"leisure",   label:"Loisirs",      icon:"🎬",  color:"#E8D45A" },
-  { id:"shopping",  label:"Shopping",     icon:"🛍️", color:"#E85A9B" },
-  { id:"other",     label:"Autre",        icon:"📦",  color:"#A0A0A0" },
+  { id:"food",      label:"Alimentation", icon:"🍽️", color:"#3B82F6" },
+  { id:"transport", label:"Transport",    icon:"🚗",  color:"#8B5CF6" },
+  { id:"housing",   label:"Logement",     icon:"🏠",  color:"#EC4899" },
+  { id:"health",    label:"Santé",        icon:"💊",  color:"#10B981" },
+  { id:"leisure",   label:"Loisirs",      icon:"🎬",  color:"#F59E0B" },
+  { id:"shopping",  label:"Shopping",     icon:"🛍️", color:"#EF4444" },
+  { id:"other",     label:"Autre",        icon:"📦",  color:"#64748B" },
 ];
-const COLORS = ["#E8845A","#5A9BE8","#8B5AE8","#5AE89B","#E8D45A","#E85A9B","#A0A0A0","#E85A5A","#5AE8E8","#E8A85A","#7AE85A","#E8C85A"];
+const COLORS = ["#3B82F6","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#64748B","#06B6D4","#84CC16","#F97316","#6366F1","#14B8A6"];
 const ICONS  = ["🍽️","🚗","🏠","💊","🎬","🛍️","📦","✈️","📚","🎮","⚽","🏋️","💄","🐾","☕","🍕","🛒","💡","📱","🎓","🏦","🎁"];
 
 const DEFAULT_USERS = [
-  { id:"admin",  name:"Administrateur", role:"admin",  avatar:"👑", budget:200000 },
-  { id:"user1",  name:"Karim Benali",   role:"member", avatar:"👤", budget:50000  },
-  { id:"user2",  name:"Sara Meddah",    role:"member", avatar:"👤", budget:45000  },
-  { id:"user3",  name:"Yacine Ould",    role:"member", avatar:"👤", budget:40000  },
-  { id:"user4",  name:"Amina Cherif",   role:"member", avatar:"👤", budget:35000  },
-];
-
-const SEED_EXP = [
-  { id:1, userId:"user1", label:"Carburant",        amount:4200,  category:"transport", date:"2026-03-10", status:"approved" },
-  { id:2, userId:"user1", label:"Repas client",     amount:8500,  category:"food",      date:"2026-03-14", status:"pending"  },
-  { id:3, userId:"user2", label:"Fournitures",      amount:3100,  category:"other",     date:"2026-03-11", status:"approved" },
-  { id:4, userId:"user2", label:"Taxi aéroport",    amount:2800,  category:"transport", date:"2026-03-16", status:"pending"  },
-  { id:5, userId:"user3", label:"Hôtel Alger",      amount:12000, category:"housing",   date:"2026-03-09", status:"approved" },
-  { id:6, userId:"user3", label:"Médicaments",      amount:1500,  category:"health",    date:"2026-03-17", status:"rejected" },
-  { id:7, userId:"user4", label:"Formation",        amount:9000,  category:"leisure",   date:"2026-03-12", status:"pending"  },
-  { id:8, userId:"user4", label:"Matériel bureau",  amount:6700,  category:"shopping",  date:"2026-03-15", status:"approved" },
+  { id:"admin",  name:"Youcef",   role:"admin",  avatar:"👑", password:"admin2026" },
+  { id:"admin2", name:"Souad",    role:"admin",  avatar:"👑", password:"admin2027" },
+  { id:"user1",  name:"Belmahi",  role:"member", avatar:"👤", password:"b123" },
+  { id:"user2",  name:"Tariq",    role:"member", avatar:"👤", password:"t123" },
+  { id:"user3",  name:"Amine",    role:"member", avatar:"👤", password:"a123" },
 ];
 
 const STATUS = {
-  pending:  { label:"En attente", color:"#E8D45A", bg:"#E8D45A18", icon:"⏳" },
-  approved: { label:"Approuvée",  color:"#5AE89B", bg:"#5AE89B18", icon:"✅" },
-  rejected: { label:"Refusée",    color:"#E85A5A", bg:"#E85A5A18", icon:"❌" },
+  pending:  { label:"En attente", cls:"pending",  icon:"⏳" },
+  approved: { label:"Approuvée",  cls:"approved", icon:"✅" },
+  rejected: { label:"Refusée",    cls:"rejected", icon:"❌" },
 };
 
-function fmt(n) { return new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(n) + " DA"; }
+function fmt(n) { return new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(n)+" DA"; }
 
-// ── localStorage helpers (shared key so all tabs/browsers on same device sync)
-// For real multi-device sync, see README for Firebase option.
 const LS = {
-  get(key, fallback) {
-    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
-  },
-  set(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); updateSyncTime(); } catch {}
-  },
+  get(key,fb){ try{const v=localStorage.getItem(key);return v?JSON.parse(v):fb;}catch{return fb;} },
+  set(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch{} try{db.ref(key).set(val);updateSyncTime();}catch{} },
 };
+function updateSyncTime(){ const el=document.getElementById("sync-time"); if(el) el.textContent=new Date().toLocaleTimeString("fr-FR"); }
 
-function updateSyncTime() {
-  const el = document.getElementById("sync-time");
-  if (el) el.textContent = new Date().toLocaleTimeString("fr-FR");
-}
-
-// ── App ──────────────────────────────────────────────────────────────────────
 function App() {
-  const [currentUser,  setCurrentUser]  = useState(null);
-  const [users,        setUsers]        = useState(() => LS.get("eq_users",    DEFAULT_USERS));
-  const [categories,   setCategories]   = useState(() => LS.get("eq_cats",     DEFAULT_CATS));
-  const [expenses,     setExpenses]     = useState(() => LS.get("eq_expenses", SEED_EXP));
-  const [view,         setView]         = useState("list");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterMember, setFilterMember] = useState("all");
-  const [showForm,     setShowForm]     = useState(false);
-  const [editingCat,   setEditingCat]   = useState(null);
-  const [iconOpen,     setIconOpen]     = useState(false);
-  const [rejectId,     setRejectId]     = useState(null);
-  const [rejectNote,   setRejectNote]   = useState("");
-  const [animNew,      setAnimNew]      = useState(null);
-  const [toast,        setToast]        = useState(null);
-  const [form, setForm] = useState({ label:"", amount:"", category:"food", date:new Date().toISOString().slice(0,10), note:"" });
-  const nextId    = useRef(LS.get("eq_nextid",    500));
-  const nextCatId = useRef(LS.get("eq_nextcatid", 600));
+  const [currentUser,   setCurrentUser]   = useState(null);
+  const [loginStep,     setLoginStep]     = useState(null);
+  const [pwInput,       setPwInput]       = useState("");
+  const [pwError,       setPwError]       = useState(false);
+  const [users,         setUsers]         = useState(()=>LS.get("eq_users",DEFAULT_USERS));
+  const [categories,    setCategories]    = useState(()=>LS.get("eq_cats",DEFAULT_CATS));
+  const [expenses,      setExpenses]      = useState(()=>LS.get("eq_expenses",[]));
+  const [view,          setView]          = useState("dashboard");
+  const [filterStatus,  setFilterStatus]  = useState("all");
+  const [filterMember,  setFilterMember]  = useState("all");
+  const [showForm,      setShowForm]      = useState(false);
+  const [editingCat,    setEditingCat]    = useState(null);
+  const [iconOpen,      setIconOpen]      = useState(false);
+  const [rejectId,      setRejectId]      = useState(null);
+  const [rejectNote,    setRejectNote]    = useState("");
+  const [toast,         setToast]         = useState(null);
+  const [form, setForm] = useState({label:"",amount:"",category:"food",date:new Date().toISOString().slice(0,10),note:""});
+  const nextId    = useRef(LS.get("eq_nextid",500));
+  const nextCatId = useRef(600);
+  const isAdmin = currentUser?.role==="admin";
 
-  const isAdmin = currentUser?.role === "admin";
+  useEffect(()=>{
+    if(!currentUser) return;
+    const refs=[];
+    const er=db.ref("eq_expenses"); er.on("value",s=>{if(s.exists())setExpenses(s.val());}); refs.push(er);
+    const cr=db.ref("eq_cats");     cr.on("value",s=>{if(s.exists())setCategories(s.val());}); refs.push(cr);
+    const ur=db.ref("eq_users");    ur.on("value",s=>{if(s.exists())setUsers(s.val());}); refs.push(ur);
+    return ()=>refs.forEach(r=>r.off());
+  },[currentUser]);
 
-  // Poll localStorage every 5s (handles multiple tabs on same browser)
-  useEffect(() => {
-    if (!currentUser) return;
-    const iv = setInterval(() => {
-      setExpenses(LS.get("eq_expenses", SEED_EXP));
-      setCategories(LS.get("eq_cats", DEFAULT_CATS));
-      setUsers(LS.get("eq_users", DEFAULT_USERS));
-    }, 5000);
-    return () => clearInterval(iv);
-  }, [currentUser]);
+  const saveExp  = v=>{ setExpenses(v);   LS.set("eq_expenses",v); LS.set("eq_nextid",nextId.current); };
+  const saveCats = v=>{ setCategories(v); LS.set("eq_cats",v); };
+  const saveUsrs = v=>{ setUsers(v);      LS.set("eq_users",v); };
+  const getCat   = id=>categories.find(c=>c.id===id)||{label:"Autre",icon:"📦",color:"#64748B"};
+  const getUser  = id=>users.find(u=>u.id===id)||{name:"Inconnu",avatar:"👤"};
+  const showToast= (msg,color="#10B981")=>{ setToast({msg,color}); setTimeout(()=>setToast(null),2500); };
 
-  // Listen for storage events from other tabs
-  useEffect(() => {
-    const handler = () => {
-      setExpenses(LS.get("eq_expenses", SEED_EXP));
-      setCategories(LS.get("eq_cats", DEFAULT_CATS));
-      setUsers(LS.get("eq_users", DEFAULT_USERS));
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
-
-  const saveExpenses   = (v) => { setExpenses(v);   LS.set("eq_expenses", v); LS.set("eq_nextid", nextId.current); };
-  const saveCategories = (v) => { setCategories(v); LS.set("eq_cats", v); };
-  const saveUsers      = (v) => { setUsers(v);      LS.set("eq_users", v); };
-
-  const showToast = (msg, color="#5AE89B") => { setToast({msg,color}); setTimeout(()=>setToast(null),2500); };
-  const getCat    = (id) => categories.find(c=>c.id===id) || {label:"Autre",icon:"📦",color:"#A0A0A0"};
-  const getUser   = (id) => users.find(u=>u.id===id)      || {name:"Inconnu",avatar:"👤"};
-
-  // ── Derived ────────────────────────────────────────────────────────────────
+  const myExp      = isAdmin ? expenses : expenses.filter(e=>e.userId===currentUser?.id);
   const visibleExp = isAdmin
-    ? expenses.filter(e => (filterStatus==="all"||e.status===filterStatus) && (filterMember==="all"||e.userId===filterMember))
-    : expenses.filter(e => e.userId===currentUser?.id);
-
-  const approvedExp = isAdmin
-    ? expenses.filter(e=>e.status==="approved")
-    : expenses.filter(e=>e.userId===currentUser?.id && e.status==="approved");
-
-  const myTotal    = approvedExp.reduce((s,e)=>s+e.amount, 0);
-  const myBudget   = isAdmin ? users.filter(u=>u.role==="member").reduce((s,u)=>s+u.budget,0) : (currentUser?.budget||0);
-  const budgetPct  = Math.min((myTotal/(myBudget||1))*100, 100);
-  const budgetLeft = myBudget - myTotal;
-  const pendingN   = expenses.filter(e=>e.status==="pending").length;
-  const statTotal  = approvedExp.reduce((s,e)=>s+e.amount, 0);
-
+    ? expenses.filter(e=>(filterStatus==="all"||e.status===filterStatus)&&(filterMember==="all"||e.userId===filterMember))
+    : expenses.filter(e=>e.userId===currentUser?.id);
+  const approvedExp  = (isAdmin?expenses:myExp).filter(e=>e.status==="approved");
+  const pendingExp   = expenses.filter(e=>e.status==="pending");
+  const myTotal      = approvedExp.reduce((s,e)=>s+e.amount,0);
+  const pendingTotal = pendingExp.filter(e=>isAdmin||e.userId===currentUser?.id).reduce((s,e)=>s+e.amount,0);
+  const statTotal    = approvedExp.reduce((s,e)=>s+e.amount,0);
   const byCat = categories.map(c=>{
-    const total = approvedExp.filter(e=>e.category===c.id).reduce((s,e)=>s+e.amount,0);
-    return {...c, total, pct: statTotal>0?(total/statTotal)*100:0};
+    const total=approvedExp.filter(e=>e.category===c.id).reduce((s,e)=>s+e.amount,0);
+    return {...c,total,pct:statTotal>0?(total/statTotal)*100:0};
   }).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
-  function addExpense() {
-    if (!form.label||!form.amount||isNaN(parseFloat(form.amount))) return;
-    const e = {id:nextId.current++, userId:currentUser.id, label:form.label, amount:parseFloat(form.amount), category:form.category, date:form.date, note:form.note, status:"pending"};
-    saveExpenses([e,...expenses]);
-    setAnimNew(e.id); setTimeout(()=>setAnimNew(null),600);
+  function addExpense(){
+    if(!form.label||!form.amount||isNaN(parseFloat(form.amount))) return;
+    const e={id:nextId.current++,userId:currentUser.id,label:form.label,amount:parseFloat(form.amount),category:form.category,date:form.date,note:form.note,status:"pending"};
+    saveExp([e,...expenses]);
     setForm({label:"",amount:"",category:"food",date:new Date().toISOString().slice(0,10),note:""});
     setShowForm(false);
-    showToast("Dépense soumise ⏳","#E8D45A");
+    showToast("Dépense soumise avec succès","#F59E0B");
   }
-  function approve(id) { saveExpenses(expenses.map(e=>e.id===id?{...e,status:"approved",rejectNote:undefined}:e)); showToast("Approuvée ✅"); }
-  function reject(id)  { saveExpenses(expenses.map(e=>e.id===id?{...e,status:"rejected",rejectNote}:e)); setRejectId(null); setRejectNote(""); showToast("Refusée","#E85A5A"); }
-  function delExp(id)  { saveExpenses(expenses.filter(e=>e.id!==id)); }
-  function saveCat() {
-    if (!editingCat.label.trim()) return;
-    const updated = editingCat.id
-      ? categories.map(c=>c.id===editingCat.id?{...editingCat}:c)
-      : [...categories,{...editingCat,id:"cat_"+(nextCatId.current++)}];
-    saveCategories(updated); setEditingCat(null);
+  function approve(id){ saveExp(expenses.map(e=>e.id===id?{...e,status:"approved",rejectNote:undefined}:e)); showToast("Dépense approuvée"); }
+  function reject(id) { saveExp(expenses.map(e=>e.id===id?{...e,status:"rejected",rejectNote}:e)); setRejectId(null); setRejectNote(""); showToast("Dépense refusée","#EF4444"); }
+  function delExp(id) { saveExp(expenses.filter(e=>e.id!==id)); }
+  function saveCat(){
+    if(!editingCat.label.trim()) return;
+    const upd=editingCat.id?categories.map(c=>c.id===editingCat.id?{...editingCat}:c):[...categories,{...editingCat,id:"cat_"+(nextCatId.current++)}];
+    saveCats(upd); setEditingCat(null);
   }
-  function delCat(id) {
-    saveCategories(categories.filter(c=>c.id!==id));
-    saveExpenses(expenses.map(e=>e.category===id?{...e,category:"other"}:e));
-  }
-  function exportCSV() {
-    const rows = [
-      ["Date","Membre","Description","Catégorie","Montant (DA)","Statut","Note refus"],
+  function delCat(id){ saveCats(categories.filter(c=>c.id!==id)); saveExp(expenses.map(e=>e.category===id?{...e,category:"other"}:e)); }
+  function exportCSV(){
+    const rows=[["Date","Membre","Description","Catégorie","Montant (DA)","Statut","Note refus"],
       ...expenses.sort((a,b)=>a.date.localeCompare(b.date)).map(e=>{
-        const c=getCat(e.category); const u=getUser(e.userId);
+        const c=getCat(e.category),u=getUser(e.userId);
         return [e.date,u.name,`"${e.label.replace(/"/g,'""')}"`,c.label,e.amount,STATUS[e.status].label,e.rejectNote||""];
-      }),
-    ];
+      })];
     const csv="\uFEFF"+rows.map(r=>r.join(";")).join("\n");
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download="depenses_equipe.csv"; a.click();
-    URL.revokeObjectURL(url);
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="depenses.csv"; a.click(); URL.revokeObjectURL(url);
   }
 
   // ── LOGIN ─────────────────────────────────────────────────────────────────
-  if (!currentUser) return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:"20px",width:"100%",maxWidth:440,margin:"0 auto"}}>
-      <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,fontWeight:800,letterSpacing:"-0.5px",marginBottom:4}}>GESTION DÉPENSES</div>
-      <div style={{fontSize:10,color:"#555",letterSpacing:"0.15em",marginBottom:36}}>ÉQUIPE · MARS 2026</div>
-      <div style={{fontSize:10,color:"#444",letterSpacing:"0.1em",marginBottom:12,alignSelf:"flex-start"}}>CHOISIR VOTRE PROFIL</div>
-      <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%"}}>
-        {users.map(u=>(
-          <button key={u.id} className="ucard" onClick={()=>setCurrentUser(u)}
-            style={{background:"#16161E",borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,textAlign:"left",border:u.role==="admin"?"1px solid #E8845A33":"1px solid transparent",width:"100%"}}>
-            <div style={{fontSize:26}}>{u.avatar}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:500}}>{u.name}</div>
-              <div style={{fontSize:10,color:u.role==="admin"?"#E8845A":"#555",marginTop:2}}>
-                {u.role==="admin"?"👑 ADMINISTRATEUR":"Budget : "+fmt(u.budget)}
-              </div>
-            </div>
-            <div style={{fontSize:18,color:"#333"}}>›</div>
-          </button>
+  if(!currentUser) return (
+    <div className="login-page">
+      <div className="login-left">
+        <div className="login-brand">💼 ExpensesPro</div>
+        <div className="login-tagline">Gérez les dépenses de votre équipe en toute simplicité, avec validation et suivi en temps réel.</div>
+        {[["🔐","Accès sécurisé par profil"],["✅","Validation admin en un clic"],["📊","Statistiques en temps réel"],["🔥","Synchronisé sur tous les appareils"]].map(([icon,text])=>(
+          <div key={text} className="login-feat"><div className="login-feat-icon">{icon}</div>{text}</div>
         ))}
       </div>
-      <div style={{marginTop:16,fontSize:10,color:"#2A2A38",textAlign:"center"}}>Données partagées via ce navigateur</div>
+      <div className="login-right">
+        <div className="login-card slide-up">
+          {!loginStep ? (
+            <>
+              <div className="login-card-title">Connexion</div>
+              <div className="login-card-sub">Sélectionnez votre profil pour continuer</div>
+              <div className="profile-grid">
+                {users.map(u=>(
+                  <button key={u.id} className={`profile-btn ${u.role==="admin"?"admin-card":""}`} onClick={()=>{setLoginStep(u);setPwInput("");setPwError(false);}}>
+                    <div className={`profile-avatar ${u.role==="admin"?"admin":"member"}`}>{u.avatar}</div>
+                    <div>
+                      <div className="profile-name">{u.name}</div>
+                      <div className="profile-role">{u.role==="admin"?"Administrateur":"Membre"}</div>
+                    </div>
+                    <span className="profile-arrow">›</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <button onClick={()=>setLoginStep(null)} style={{background:"none",border:"none",color:"#64748B",fontSize:13,cursor:"pointer",marginBottom:20,display:"flex",alignItems:"center",gap:6}}>← Retour</button>
+              <div className="login-card-title">Bonjour, {loginStep.name} 👋</div>
+              <div className="login-card-sub">Entrez votre mot de passe pour accéder à votre espace</div>
+              <div className="form-group">
+                <label className="form-label">Mot de passe</label>
+                <input autoFocus type="password" className={`form-input ${pwError?"error":""}`} placeholder="••••••••"
+                  value={pwInput} onChange={e=>{setPwInput(e.target.value);setPwError(false);}}
+                  onKeyDown={e=>{ if(e.key==="Enter"){ if(pwInput===loginStep.password){setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}}/>
+                {pwError && <div style={{color:"#EF4444",fontSize:12,marginTop:6}}>Mot de passe incorrect. Réessayez.</div>}
+              </div>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>{ if(pwInput===loginStep.password){setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}>
+                Se connecter →
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 
-  // ── MAIN ──────────────────────────────────────────────────────────────────
-  const adminViews  = [{id:"list",label:"Dépenses"},{id:"stats",label:"Stats"},{id:"team",label:"Équipe"},{id:"cats",label:"Catégories"}];
-  const memberViews = [{id:"list",label:"Mes dépenses"},{id:"stats",label:"Stats"}];
-  const views = isAdmin ? adminViews : memberViews;
+  // ── NAVIGATION ─────────────────────────────────────────────────────────────
+  const adminNav  = [{id:"dashboard",icon:"📊",label:"Tableau de bord"},{id:"expenses",icon:"💳",label:"Dépenses",badge:pendingExp.length||0},{id:"team",icon:"👥",label:"Équipe"},{id:"cats",icon:"🏷️",label:"Catégories"}];
+  const memberNav = [{id:"dashboard",icon:"📊",label:"Mon tableau de bord"},{id:"expenses",icon:"💳",label:"Mes dépenses"}];
+  const nav = isAdmin ? adminNav : memberNav;
 
   return (
     <>
       {/* TOAST */}
       {toast && (
-        <div className="sup" style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:"#1E1E28",border:`1px solid ${toast.color}55`,borderRadius:10,padding:"9px 18px",fontSize:12,color:toast.color,zIndex:999,boxShadow:"0 8px 30px rgba(0,0,0,.5)",whiteSpace:"nowrap"}}>
+        <div className="toast slide-up" style={{background:toast.color,color:"#fff"}}>
           {toast.msg}
         </div>
       )}
 
-      {/* HEADER */}
-      <div style={{width:"100%",maxWidth:520,padding:"28px 20px 0"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <div>
-            <div style={{fontFamily:"'Syne',sans-serif",fontSize:21,fontWeight:800,letterSpacing:"-0.5px",lineHeight:1}}>{isAdmin?"TABLEAU ADMIN":"MES DÉPENSES"}</div>
-            <div style={{fontSize:10,color:"#555",marginTop:3,letterSpacing:"0.1em"}}>MARS 2026 · {currentUser.name.toUpperCase()}</div>
-          </div>
-          <div style={{display:"flex",gap:4,alignItems:"center"}}>
-            {views.map(v=>(
-              <button key={v.id} className="tab" onClick={()=>setView(v.id)}
-                style={{background:view===v.id?"#E8845A":"#1A1A22",color:view===v.id?"#0F0F13":"#888",borderRadius:6,padding:"5px 8px",fontSize:9,fontWeight:500,letterSpacing:"0.07em",textTransform:"uppercase",position:"relative"}}>
-                {v.label}
-                {v.id==="list"&&isAdmin&&pendingN>0&&(
-                  <span style={{position:"absolute",top:-5,right:-5,background:"#E85A5A",color:"#fff",borderRadius:"50%",width:14,height:14,fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>{pendingN}</span>
-                )}
-              </button>
-            ))}
-            {isAdmin&&<button className="tab" onClick={exportCSV} title="Export CSV" style={{background:"#1A1A22",color:"#5AE89B",borderRadius:6,padding:"5px 8px",fontSize:14}}>⬇</button>}
-            <button className="tab" onClick={()=>setCurrentUser(null)} title="Déconnexion" style={{background:"#1A1A22",color:"#555",borderRadius:6,padding:"5px 8px",fontSize:13}}>⏏</button>
-          </div>
+      {/* SIDEBAR */}
+      <nav className="sidebar">
+        <div className="sidebar-logo">
+          <h1>💼 ExpensesPro</h1>
+          <p>Gestion des dépenses</p>
         </div>
-
-        {/* BUDGET */}
-        <div style={{background:"#1A1A22",borderRadius:12,padding:"13px 16px",marginTop:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div className="sidebar-nav">
+          {nav.map(item=>(
+            <div key={item.id} className={`nav-item ${view===item.id?"active":""}`} onClick={()=>setView(item.id)}>
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+              {item.badge>0 && <span className="badge">{item.badge}</span>}
+            </div>
+          ))}
+          {isAdmin && (
+            <div className="nav-item" onClick={exportCSV} style={{marginTop:"auto"}}>
+              <span className="nav-icon">⬇️</span>Export CSV
+            </div>
+          )}
+        </div>
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="user-avatar">{currentUser.avatar}</div>
             <div>
-              <div style={{fontSize:10,color:"#666",letterSpacing:"0.1em",marginBottom:1}}>{isAdmin?"TOTAL APPROUVÉ (ÉQUIPE)":"DÉPENSÉ APPROUVÉ"}</div>
-              <div style={{fontFamily:"'Syne',sans-serif",fontSize:22,fontWeight:800,color:budgetPct>85?"#E85A5A":"#F0EDE8"}}>{fmt(myTotal)}</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:10,color:"#666",letterSpacing:"0.1em",marginBottom:1}}>{isAdmin?"BUDGET TOTAL":"MON BUDGET"}</div>
-              <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:"#E8845A"}}>{fmt(myBudget)}</div>
+              <div className="user-name">{currentUser.name}</div>
+              <div className="user-role">{isAdmin?"Admin":"Membre"}</div>
             </div>
           </div>
-          <div style={{background:"#2A2A35",borderRadius:99,height:5,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${budgetPct}%`,background:budgetPct>85?"#E85A5A":budgetPct>60?"#E8D45A":"#5AE89B",borderRadius:99,transition:"width .6s cubic-bezier(.34,1.56,.64,1)"}}/>
-          </div>
-          <div style={{marginTop:5,fontSize:10,color:budgetLeft<0?"#E85A5A":"#5AE89B"}}>
-            {budgetLeft>=0?`▲ ${fmt(budgetLeft)} restants`:`▼ Dépassement de ${fmt(-budgetLeft)}`}
-            {isAdmin&&pendingN>0&&<span style={{marginLeft:12,color:"#E8D45A"}}>· {pendingN} en attente</span>}
-          </div>
+          <button className="logout-btn" onClick={()=>setCurrentUser(null)}>⏏ Déconnexion</button>
         </div>
-      </div>
+      </nav>
 
-      {/* CONTENT */}
-      <div style={{width:"100%",maxWidth:520,padding:"16px 20px 0"}}>
+      {/* MAIN */}
+      <main className="main">
 
-        {/* LIST */}
-        {view==="list"&&(
-          <div className="fade">
-            {isAdmin&&(
-              <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+        {/* ── DASHBOARD ── */}
+        {view==="dashboard" && (
+          <div className="fade-in">
+            <div className="page-header">
+              <div className="page-title">{isAdmin?"Tableau de bord":"Mon tableau de bord"}</div>
+              <div className="page-sub">{new Date().toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
+            </div>
+
+            {/* Stats */}
+            <div className="stats-grid">
+              <div className="stat-card blue">
+                <div className="stat-label">Total approuvé</div>
+                <div className="stat-value">{fmt(myTotal)}</div>
+                <div className="stat-sub">{approvedExp.length} transaction(s)</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">En attente</div>
+                <div className="stat-value" style={{color:"#F59E0B"}}>{fmt(pendingTotal)}</div>
+                <div className="stat-sub">{pendingExp.filter(e=>isAdmin||e.userId===currentUser.id).length} dépense(s) à valider</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">{isAdmin?"Membres actifs":"Mes dépenses"}</div>
+                <div className="stat-value" style={{color:"#10B981"}}>{isAdmin?users.filter(u=>u.role==="member").length:myExp.length}</div>
+                <div className="stat-sub">{isAdmin?"dans l'équipe":"soumises au total"}</div>
+              </div>
+            </div>
+
+            {/* Chart + recent */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+              {/* Bar chart */}
+              <div className="card">
+                <div className="card-header" style={{paddingBottom:16}}>
+                  <div className="card-title">Répartition par catégorie</div>
+                </div>
+                <div className="card-body" style={{paddingTop:0}}>
+                  {byCat.length===0 ? (
+                    <div style={{color:"#94A3B8",fontSize:13,textAlign:"center",padding:"20px 0"}}>Aucune dépense approuvée</div>
+                  ) : byCat.map(c=>(
+                    <div key={c.id} className="bar-row">
+                      <div className="bar-label">{c.icon} {c.label}</div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{width:`${c.pct}%`,background:c.color}}/>
+                      </div>
+                      <div className="bar-amt">{fmt(c.total)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent expenses */}
+              <div className="card">
+                <div className="card-header" style={{paddingBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div className="card-title">Dernières dépenses</div>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setView("expenses")}>Voir tout →</button>
+                </div>
+                <div className="card-body" style={{paddingTop:0}}>
+                  {(isAdmin?expenses:myExp).slice(0,5).map(exp=>{
+                    const c=getCat(exp.category); const st=STATUS[exp.status]; const u=getUser(exp.userId);
+                    return (
+                      <div key={exp.id} style={{display:"flex",alignItems:"center",gap:12,paddingBottom:12,marginBottom:12,borderBottom:"1px solid #F1F5F9"}}>
+                        <div style={{width:36,height:36,borderRadius:10,background:`${c.color}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{c.icon}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:600,color:"#0F172A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{exp.label}</div>
+                          <div style={{fontSize:11,color:"#94A3B8",marginTop:1}}>{isAdmin&&<span>{u.name} · </span>}{new Date(exp.date).toLocaleDateString("fr-FR")}</div>
+                        </div>
+                        <div style={{textAlign:"right",flexShrink:0}}>
+                          <div style={{fontSize:13,fontWeight:700,color:c.color}}>{fmt(exp.amount)}</div>
+                          <span className={`badge ${st.cls}`} style={{fontSize:10,marginTop:2}}>{st.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(isAdmin?expenses:myExp).length===0&&<div style={{color:"#94A3B8",fontSize:13,textAlign:"center",padding:"20px 0"}}>Aucune dépense</div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── EXPENSES ── */}
+        {view==="expenses" && (
+          <div className="fade-in">
+            <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <div className="page-title">{isAdmin?"Toutes les dépenses":"Mes dépenses"}</div>
+                <div className="page-sub">{visibleExp.length} dépense(s)</div>
+              </div>
+              {!isAdmin && <button className="btn btn-primary" onClick={()=>setShowForm(true)}>+ Nouvelle dépense</button>}
+            </div>
+
+            {isAdmin && (
+              <div className="filters">
                 {["all","pending","approved","rejected"].map(s=>(
-                  <button key={s} className="pill" onClick={()=>setFilterStatus(s)}
-                    style={{background:filterStatus===s?(s==="all"?"#F0EDE8":STATUS[s]?.color+"33"):"#1A1A22",color:filterStatus===s?(s==="all"?"#0F0F13":STATUS[s]?.color):"#666",borderRadius:99,padding:"4px 12px",fontSize:10,border:filterStatus===s&&s!=="all"?`1px solid ${STATUS[s]?.color}44`:"1px solid transparent"}}>
-                    {s==="all"?"Tout":STATUS[s].icon+" "+STATUS[s].label}
+                  <button key={s} className={`filter-btn ${filterStatus===s?"active":""}`} onClick={()=>setFilterStatus(s)}>
+                    {s==="all"?"Toutes":STATUS[s].icon+" "+STATUS[s].label}
                   </button>
                 ))}
-                <select value={filterMember} onChange={e=>setFilterMember(e.target.value)}
-                  style={{background:"#1A1A22",border:"1px solid #2A2A38",borderRadius:99,padding:"4px 10px",color:"#888",fontSize:10}}>
+                <select className="filter-select" value={filterMember} onChange={e=>setFilterMember(e.target.value)}>
                   <option value="all">Tous les membres</option>
                   {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>
             )}
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {visibleExp.length===0&&<div style={{textAlign:"center",color:"#333",padding:"36px 0",fontSize:12}}>Aucune dépense</div>}
-              {visibleExp.map(exp=>{
-                const c=getCat(exp.category); const u=getUser(exp.userId); const st=STATUS[exp.status];
-                return (
-                  <div key={exp.id} className={`row ${animNew===exp.id?"pop":""}`}
-                    style={{background:"#16161E",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"flex-start",gap:12,borderLeft:`3px solid ${c.color}`}}>
-                    <div style={{fontSize:18,marginTop:1}}>{c.icon}</div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{exp.label}</div>
-                      <div style={{fontSize:10,color:"#555",marginTop:2}}>
-                        {isAdmin&&<span style={{color:"#777"}}>{u.avatar} {u.name} · </span>}
-                        {c.label} · {new Date(exp.date).toLocaleDateString("fr-FR")}
-                      </div>
-                      {exp.rejectNote&&<div style={{fontSize:10,color:"#E85A5A",marginTop:3}}>↩ {exp.rejectNote}</div>}
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:c.color}}>{fmt(exp.amount)}</div>
-                      <div style={{background:st.bg,color:st.color,borderRadius:99,padding:"2px 8px",fontSize:9}}>{st.icon} {st.label}</div>
-                    </div>
-                    {isAdmin&&exp.status==="pending"&&(
-                      <div className="act" style={{display:"flex",gap:4,marginTop:2}}>
-                        <button className="abtn" onClick={()=>approve(exp.id)} style={{background:"#5AE89B18",color:"#5AE89B",borderRadius:6,padding:"5px 8px",fontSize:12,border:"1px solid #5AE89B33"}}>✓</button>
-                        <button className="rbtn" onClick={()=>{setRejectId(exp.id);setRejectNote("");}} style={{background:"#E85A5A18",color:"#E85A5A",borderRadius:6,padding:"5px 8px",fontSize:12,border:"1px solid #E85A5A33"}}>✕</button>
-                      </div>
-                    )}
-                    {!isAdmin&&exp.status==="pending"&&(
-                      <button className="act" onClick={()=>delExp(exp.id)} style={{background:"none",color:"#E85A5A",fontSize:14,padding:"2px 4px",marginTop:2}}>🗑️</button>
-                    )}
-                  </div>
-                );
-              })}
+
+            <div className="card table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    {isAdmin && <th>Membre</th>}
+                    <th>Catégorie</th>
+                    <th>Date</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleExp.length===0&&<tr><td colSpan="7" style={{textAlign:"center",color:"#94A3B8",padding:"32px"}}>Aucune dépense</td></tr>}
+                  {visibleExp.map(exp=>{
+                    const c=getCat(exp.category); const st=STATUS[exp.status]; const u=getUser(exp.userId);
+                    return (
+                      <tr key={exp.id}>
+                        <td>
+                          <div style={{fontWeight:600,color:"#0F172A"}}>{exp.label}</div>
+                          {exp.note&&<div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>{exp.note}</div>}
+                          {exp.rejectNote&&<div style={{fontSize:11,color:"#EF4444",marginTop:2}}>↩ {exp.rejectNote}</div>}
+                        </td>
+                        {isAdmin&&<td><div style={{display:"flex",alignItems:"center",gap:6}}><span>{u.avatar}</span>{u.name}</div></td>}
+                        <td>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <span className="cat-dot" style={{background:c.color}}/>
+                            {c.icon} {c.label}
+                          </div>
+                        </td>
+                        <td>{new Date(exp.date).toLocaleDateString("fr-FR")}</td>
+                        <td style={{fontWeight:700,color:c.color}}>{fmt(exp.amount)}</td>
+                        <td><span className={`badge ${st.cls}`}>{st.icon} {st.label}</span></td>
+                        <td>
+                          <div className="row-actions">
+                            {isAdmin&&exp.status==="pending"&&(
+                              <>
+                                <button className="btn btn-approve btn-sm btn-icon" onClick={()=>approve(exp.id)} title="Approuver">✓</button>
+                                <button className="btn btn-reject btn-sm btn-icon" onClick={()=>{setRejectId(exp.id);setRejectNote("");}} title="Refuser">✕</button>
+                              </>
+                            )}
+                            {!isAdmin&&exp.status==="pending"&&(
+                              <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delExp(exp.id)} title="Supprimer">🗑️</button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        {/* STATS */}
-        {view==="stats"&&(
-          <div className="fade">
-            <div style={{fontSize:10,color:"#555",letterSpacing:"0.1em",marginBottom:12}}>RÉPARTITION PAR CATÉGORIE (APPROUVÉES)</div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {byCat.map(c=>(
-                <div key={c.id} style={{background:"#16161E",borderRadius:10,padding:"13px 15px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:7,alignItems:"center"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}><span>{c.icon}</span><span style={{fontSize:12}}>{c.label}</span></div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontSize:10,color:"#555"}}>{c.pct.toFixed(0)}%</span>
-                      <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:c.color}}>{fmt(c.total)}</span>
-                    </div>
-                  </div>
-                  <div style={{background:"#2A2A35",borderRadius:99,height:4,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${c.pct}%`,background:c.color,borderRadius:99,transition:"width .7s cubic-bezier(.34,1.56,.64,1)"}}/>
-                  </div>
-                </div>
-              ))}
+        {/* ── TEAM ── */}
+        {view==="team" && isAdmin && (
+          <div className="fade-in">
+            <div className="page-header">
+              <div className="page-title">Équipe</div>
+              <div className="page-sub">{users.filter(u=>u.role==="member").length} membre(s)</div>
             </div>
-            <div style={{background:"#1A1A22",borderRadius:12,padding:"14px 16px",marginTop:14}}>
-              <div style={{fontSize:10,color:"#555",letterSpacing:"0.1em",marginBottom:10}}>RÉSUMÉ</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                {[
-                  {label:"Transactions",  value:approvedExp.length},
-                  {label:"Moyenne",       value:fmt(statTotal/(approvedExp.length||1))},
-                  {label:"En attente",    value:expenses.filter(e=>(isAdmin||e.userId===currentUser.id)&&e.status==="pending").length},
-                  {label:"Refusées",      value:expenses.filter(e=>(isAdmin||e.userId===currentUser.id)&&e.status==="rejected").length},
-                ].map(s=>(
-                  <div key={s.label} style={{background:"#13131A",borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{fontSize:9,color:"#555",marginBottom:3}}>{s.label}</div>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{s.value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TEAM */}
-        {view==="team"&&isAdmin&&(
-          <div className="fade">
-            <div style={{fontSize:10,color:"#555",letterSpacing:"0.1em",marginBottom:12}}>MEMBRES DE L'ÉQUIPE</div>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {users.filter(u=>u.role==="member").map(u=>{
+            <div className="team-grid">
+              {users.map(u=>{
                 const uExp=expenses.filter(e=>e.userId===u.id);
                 const uApp=uExp.filter(e=>e.status==="approved").reduce((s,e)=>s+e.amount,0);
                 const uPnd=uExp.filter(e=>e.status==="pending").length;
-                const uPct=Math.min((uApp/(u.budget||1))*100,100);
                 return (
-                  <div key={u.id} style={{background:"#16161E",borderRadius:10,padding:"14px 16px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                      <div style={{fontSize:22}}>{u.avatar}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:500}}>{u.name}</div>
-                        <div style={{fontSize:10,color:"#555",marginTop:1}}>
-                          {uExp.length} dépense(s)
-                          {uPnd>0&&<span style={{color:"#E8D45A",marginLeft:6}}>· {uPnd} en attente</span>}
-                        </div>
+                  <div key={u.id} className="team-card">
+                    <div className="team-avatar">{u.avatar}</div>
+                    <div className="team-name">{u.name}</div>
+                    <div className="team-role">{u.role==="admin"?"Administrateur":"Membre"}</div>
+                    <div className="team-stat">
+                      <div>
+                        <div className="team-stat-val">{fmt(uApp)}</div>
+                        <div className="team-stat-label">Approuvé</div>
                       </div>
                       <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:"#5AE89B"}}>{fmt(uApp)}</div>
-                        <div style={{fontSize:9,color:"#555"}}>/ {fmt(u.budget)}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:uPnd>0?"#F59E0B":"#94A3B8"}}>{uPnd}</div>
+                        <div className="team-stat-label">En attente</div>
                       </div>
-                    </div>
-                    <div style={{background:"#2A2A35",borderRadius:99,height:4,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${uPct}%`,background:uPct>85?"#E85A5A":uPct>60?"#E8D45A":"#5AE89B",borderRadius:99,transition:"width .6s"}}/>
-                    </div>
-                    <div style={{marginTop:8,display:"flex",justifyContent:"flex-end"}}>
-                      <button onClick={()=>{
-                        const nb=prompt(`Budget de ${u.name} (DA) :`,u.budget);
-                        if(nb&&!isNaN(parseFloat(nb))) saveUsers(users.map(usr=>usr.id===u.id?{...usr,budget:parseFloat(nb)}:usr));
-                      }} style={{background:"#2A2A38",color:"#888",borderRadius:6,padding:"4px 10px",fontSize:9}}>✏️ Modifier budget</button>
                     </div>
                   </div>
                 );
@@ -443,121 +642,137 @@ function App() {
           </div>
         )}
 
-        {/* CATEGORIES */}
-        {view==="cats"&&isAdmin&&(
-          <div className="fade">
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={{fontSize:10,color:"#555",letterSpacing:"0.1em"}}>GÉRER LES CATÉGORIES</div>
-              <button onClick={()=>{setEditingCat({id:null,label:"",icon:"📦",color:COLORS[0]});setIconOpen(false);}}
-                style={{background:"#E8845A",color:"#0F0F13",borderRadius:8,padding:"6px 12px",fontSize:10,fontWeight:700}}>+ NOUVELLE</button>
+        {/* ── CATEGORIES ── */}
+        {view==="cats" && isAdmin && (
+          <div className="fade-in">
+            <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <div className="page-title">Catégories</div>
+                <div className="page-sub">{categories.length} catégorie(s)</div>
+              </div>
+              <button className="btn btn-primary" onClick={()=>{setEditingCat({id:null,label:"",icon:"📦",color:COLORS[0]});setIconOpen(false);}}>+ Nouvelle</button>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {categories.map(c=>(
-                <div key={c.id} className="row" style={{background:"#16161E",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,borderLeft:`3px solid ${c.color}`}}>
-                  <div style={{fontSize:20}}>{c.icon}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:500}}>{c.label}</div>
-                    <div style={{fontSize:9,color:"#555",marginTop:2}}>{expenses.filter(e=>e.category===c.id).length} dépense(s)</div>
-                  </div>
-                  <div style={{width:12,height:12,borderRadius:"50%",background:c.color}}/>
-                  <div className="act" style={{display:"flex",gap:5}}>
-                    <button onClick={()=>{setEditingCat({...c});setIconOpen(false);}} style={{background:"#2A2A38",color:"#F0EDE8",borderRadius:6,padding:"4px 8px",fontSize:11}}>✏️</button>
-                    {c.id!=="other"&&<button onClick={()=>delCat(c.id)} style={{background:"#E85A5A18",color:"#E85A5A",borderRadius:6,padding:"4px 8px",fontSize:11}}>🗑️</button>}
-                  </div>
-                </div>
-              ))}
+            <div className="card table-wrap">
+              <table>
+                <thead><tr><th>Catégorie</th><th>Couleur</th><th>Dépenses</th><th></th></tr></thead>
+                <tbody>
+                  {categories.map(c=>(
+                    <tr key={c.id}>
+                      <td><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20}}>{c.icon}</span><span style={{fontWeight:600}}>{c.label}</span></div></td>
+                      <td><span className="cat-dot" style={{background:c.color,width:16,height:16,display:"inline-block"}}/></td>
+                      <td>{expenses.filter(e=>e.category===c.id).length}</td>
+                      <td>
+                        <div className="row-actions">
+                          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>{setEditingCat({...c});setIconOpen(false);}}>✏️</button>
+                          {c.id!=="other"&&<button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delCat(c.id)}>🗑️</button>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
+      </main>
+
+      {/* FAB member */}
+      {!isAdmin && view==="expenses" && (
+        <button className="fab" onClick={()=>setShowForm(true)}>+</button>
+      )}
+
+      {/* SYNC BAR */}
+      <div id="sync-bar">
+        <span className="sync-dot"/>
+        Firebase · Synchronisé · Dernière mise à jour : <span id="sync-time">—</span>
       </div>
 
-      {/* REJECT MODAL */}
-      {rejectId&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}
-          onClick={e=>e.target===e.currentTarget&&setRejectId(null)}>
-          <div className="sup" style={{width:"100%",maxWidth:400,background:"#1E1E28",borderRadius:14,padding:"22px 20px",border:"1px solid #E85A5A33"}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,marginBottom:14,color:"#E85A5A"}}>MOTIF DU REFUS</div>
-            <textarea value={rejectNote} onChange={e=>setRejectNote(e.target.value)} placeholder="Expliquer le motif..." rows={3}
-              style={{width:"100%",background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"10px 12px",color:"#F0EDE8",fontSize:12,resize:"none"}}/>
-            <div style={{display:"flex",gap:10,marginTop:14}}>
-              <button onClick={()=>setRejectId(null)} style={{flex:1,background:"#2A2A38",color:"#888",borderRadius:8,padding:"10px",fontSize:11}}>ANNULER</button>
-              <button onClick={()=>reject(rejectId)} style={{flex:2,background:"#E85A5A",color:"#fff",borderRadius:8,padding:"10px",fontSize:11,fontWeight:700}}>CONFIRMER LE REFUS</button>
+      {/* ── ADD EXPENSE MODAL ── */}
+      {showForm && !isAdmin && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowForm(false)}>
+          <div className="modal pop">
+            <div className="modal-title">Nouvelle dépense</div>
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <input className="form-input" placeholder="Ex: Repas client, Carburant..." value={form.label} onChange={e=>setForm(f=>({...f,label:e.target.value}))}/>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Montant (DA)</label>
+                <input className="form-input" type="number" placeholder="0" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}/>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Date</label>
+                <input className="form-input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Catégorie</label>
+              <select className="form-input" value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+                {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Justificatif / Note (optionnel)</label>
+              <input className="form-input" placeholder="Précisions supplémentaires..." value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}/>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={()=>setShowForm(false)}>Annuler</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={addExpense}>Soumettre pour validation →</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* CAT EDITOR */}
-      {editingCat&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
-          onClick={e=>e.target===e.currentTarget&&(setEditingCat(null),setIconOpen(false))}>
-          <div className="sup" style={{width:"100%",maxWidth:480,background:"#1E1E28",borderRadius:"16px 16px 0 0",padding:"22px 20px 34px",border:"1px solid #2A2A38"}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,marginBottom:16}}>{editingCat.id?"MODIFIER":"NOUVELLE CATÉGORIE"}</div>
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:9,color:"#555",letterSpacing:"0.1em",marginBottom:6}}>ICÔNE</div>
-              <button onClick={()=>setIconOpen(o=>!o)} style={{background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"7px 12px",fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#F0EDE8"}}>
-                {editingCat.icon} <span style={{fontSize:10,color:"#666"}}>▾</span>
+      {/* ── REJECT MODAL ── */}
+      {rejectId && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setRejectId(null)}>
+          <div className="modal pop" style={{maxWidth:400}}>
+            <div className="modal-title" style={{color:"#EF4444"}}>Refuser la dépense</div>
+            <div className="form-group">
+              <label className="form-label">Motif du refus</label>
+              <textarea className="form-input" rows={3} placeholder="Expliquez la raison du refus..." value={rejectNote} onChange={e=>setRejectNote(e.target.value)} style={{resize:"none"}}/>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={()=>setRejectId(null)}>Annuler</button>
+              <button className="btn" style={{background:"#EF4444",color:"#fff",flex:1,justifyContent:"center"}} onClick={()=>reject(rejectId)}>Confirmer le refus</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CATEGORY EDITOR ── */}
+      {editingCat && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&(setEditingCat(null),setIconOpen(false))}>
+          <div className="modal pop">
+            <div className="modal-title">{editingCat.id?"Modifier la catégorie":"Nouvelle catégorie"}</div>
+            <div className="form-group">
+              <label className="form-label">Icône</label>
+              <button onClick={()=>setIconOpen(o=>!o)} style={{background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:8,padding:"8px 14px",fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#475569",cursor:"pointer"}}>
+                {editingCat.icon} <span style={{fontSize:12,color:"#94A3B8"}}>Choisir ▾</span>
               </button>
-              {iconOpen&&(
-                <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6,background:"#13131A",borderRadius:8,padding:8,maxHeight:130,overflowY:"auto"}}>
-                  {ICONS.map(ic=><button key={ic} onClick={()=>{setEditingCat(e=>({...e,icon:ic}));setIconOpen(false);}} style={{background:editingCat.icon===ic?"#2A2A38":"none",border:"none",fontSize:18,padding:"4px 6px",cursor:"pointer",borderRadius:4}}>{ic}</button>)}
+              {iconOpen && (
+                <div className="icon-grid" style={{marginTop:8}}>
+                  {ICONS.map(ic=><button key={ic} className={`icon-btn ${editingCat.icon===ic?"selected":""}`} onClick={()=>{setEditingCat(e=>({...e,icon:ic}));setIconOpen(false);}}>{ic}</button>)}
                 </div>
               )}
             </div>
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:9,color:"#555",letterSpacing:"0.1em",marginBottom:6}}>NOM</div>
-              <input value={editingCat.label} onChange={e=>setEditingCat(ec=>({...ec,label:e.target.value}))} placeholder="Nom..."
-                style={{background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"9px 12px",color:"#F0EDE8",fontSize:12,width:"100%"}}/>
+            <div className="form-group">
+              <label className="form-label">Nom</label>
+              <input className="form-input" placeholder="Nom de la catégorie..." value={editingCat.label} onChange={e=>setEditingCat(ec=>({...ec,label:e.target.value}))}/>
             </div>
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,color:"#555",letterSpacing:"0.1em",marginBottom:8}}>COULEUR</div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {COLORS.map(col=><div key={col} className="cdot" onClick={()=>setEditingCat(ec=>({...ec,color:col}))} style={{width:26,height:26,background:col,outline:editingCat.color===col?`3px solid ${col}`:"none",outlineOffset:3,opacity:editingCat.color===col?1:0.5}}/>)}
+            <div className="form-group">
+              <label className="form-label">Couleur</label>
+              <div className="color-grid">
+                {COLORS.map(col=><div key={col} className={`color-swatch ${editingCat.color===col?"selected":""}`} style={{background:col}} onClick={()=>setEditingCat(ec=>({...ec,color:col}))}/>)}
               </div>
             </div>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setEditingCat(null);setIconOpen(false);}} style={{flex:1,background:"#2A2A38",color:"#888",borderRadius:8,padding:"10px",fontSize:11}}>ANNULER</button>
-              <button onClick={saveCat} style={{flex:2,background:editingCat.label.trim()?"#E8845A":"#2A2A38",color:editingCat.label.trim()?"#0F0F13":"#555",borderRadius:8,padding:"10px",fontSize:11,fontWeight:700}}>
-                {editingCat.id?"ENREGISTRER ▶":"CRÉER ▶"}
-              </button>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={()=>{setEditingCat(null);setIconOpen(false);}}>Annuler</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={saveCat}>{editingCat.id?"Enregistrer":"Créer la catégorie"}</button>
             </div>
           </div>
         </div>
-      )}
-
-      {/* ADD FORM */}
-      {showForm&&!isAdmin&&(
-        <div className="sup" style={{position:"fixed",bottom:44,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 40px)",maxWidth:440,background:"#1E1E28",borderRadius:16,padding:"18px",boxShadow:"0 20px 60px rgba(0,0,0,.7)",border:"1px solid #2A2A38",zIndex:100}}>
-          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:13,marginBottom:14}}>SOUMETTRE UNE DÉPENSE</div>
-          <div style={{display:"flex",flexDirection:"column",gap:9}}>
-            <input placeholder="Description..." value={form.label} onChange={e=>setForm(f=>({...f,label:e.target.value}))}
-              style={{background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"9px 12px",color:"#F0EDE8",fontSize:12,width:"100%"}}/>
-            <div style={{display:"flex",gap:9}}>
-              <input placeholder="Montant DA" type="number" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
-                style={{background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"9px 12px",color:"#F0EDE8",fontSize:12,flex:1}}/>
-              <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
-                style={{background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"9px 12px",color:"#F0EDE8",fontSize:12,flex:1}}/>
-            </div>
-            <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
-              style={{background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"9px 12px",color:"#F0EDE8",fontSize:12}}>
-              {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-            </select>
-            <input placeholder="Note / justificatif (optionnel)..." value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}
-              style={{background:"#13131A",border:"1px solid #2A2A38",borderRadius:8,padding:"9px 12px",color:"#F0EDE8",fontSize:12,width:"100%"}}/>
-            <div style={{display:"flex",gap:9,marginTop:2}}>
-              <button onClick={()=>setShowForm(false)} style={{flex:1,background:"#2A2A38",color:"#888",borderRadius:8,padding:"9px",fontSize:11}}>ANNULER</button>
-              <button onClick={addExpense} style={{flex:2,background:"#E8845A",color:"#0F0F13",borderRadius:8,padding:"9px",fontSize:11,fontWeight:700}}>SOUMETTRE ▶</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* FAB */}
-      {!isAdmin&&(
-        <button className="fab" onClick={()=>setShowForm(s=>!s)}
-          style={{position:"fixed",bottom:36,right:20,width:50,height:50,borderRadius:"50%",background:showForm?"#2A2A38":"#E8845A",color:showForm?"#888":"#0F0F13",fontSize:22,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(232,132,90,.3)",border:"none",zIndex:200,transition:"all .25s"}}>
-          {showForm?"✕":"+"}
-        </button>
       )}
     </>
   );
