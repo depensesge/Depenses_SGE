@@ -68,23 +68,14 @@ const COLORS = ["#E8845A","#5A9BE8","#8B5AE8","#5AE89B","#E8D45A","#E85A9B","#A0
 const ICONS  = ["🍽️","🚗","🏠","💊","🎬","🛍️","📦","✈️","📚","🎮","⚽","🏋️","💄","🐾","☕","🍕","🛒","💡","📱","🎓","🏦","🎁"];
 
 const DEFAULT_USERS = [
-  { id:"admin",  name:"Administrateur", role:"admin",  avatar:"👑", budget:200000 },
-  { id:"user1",  name:"Karim Benali",   role:"member", avatar:"👤", budget:50000  },
-  { id:"user2",  name:"Sara Meddah",    role:"member", avatar:"👤", budget:45000  },
-  { id:"user3",  name:"Yacine Ould",    role:"member", avatar:"👤", budget:40000  },
-  { id:"user4",  name:"Amina Cherif",   role:"member", avatar:"👤", budget:35000  },
+  { id:"admin",  name:"Youcef",   role:"admin",  avatar:"👑", password:"admin2026" },
+  { id:"admin2", name:"Souad",    role:"admin",  avatar:"👑", password:"admin2027" },
+  { id:"user1",  name:"Belmahi",  role:"member", avatar:"👤", password:"b123"      },
+  { id:"user2",  name:"Tariq",    role:"member", avatar:"👤", password:"t123"      },
+  { id:"user3",  name:"Amine",    role:"member", avatar:"👤", password:"a123"      },
 ];
 
-const SEED_EXP = [
-  { id:1, userId:"user1", label:"Carburant",        amount:4200,  category:"transport", date:"2026-03-10", status:"approved" },
-  { id:2, userId:"user1", label:"Repas client",     amount:8500,  category:"food",      date:"2026-03-14", status:"pending"  },
-  { id:3, userId:"user2", label:"Fournitures",      amount:3100,  category:"other",     date:"2026-03-11", status:"approved" },
-  { id:4, userId:"user2", label:"Taxi aéroport",    amount:2800,  category:"transport", date:"2026-03-16", status:"pending"  },
-  { id:5, userId:"user3", label:"Hôtel Alger",      amount:12000, category:"housing",   date:"2026-03-09", status:"approved" },
-  { id:6, userId:"user3", label:"Médicaments",      amount:1500,  category:"health",    date:"2026-03-17", status:"rejected" },
-  { id:7, userId:"user4", label:"Formation",        amount:9000,  category:"leisure",   date:"2026-03-12", status:"pending"  },
-  { id:8, userId:"user4", label:"Matériel bureau",  amount:6700,  category:"shopping",  date:"2026-03-15", status:"approved" },
-];
+const SEED_EXP = [];
 
 const STATUS = {
   pending:  { label:"En attente", color:"#E8D45A", bg:"#E8D45A18", icon:"⏳" },
@@ -113,6 +104,9 @@ function updateSyncTime() {
 // ── App ──────────────────────────────────────────────────────────────────────
 function App() {
   const [currentUser,  setCurrentUser]  = useState(null);
+  const [loginStep,    setLoginStep]    = useState(null); // null | user object (waiting for password)
+  const [passwordInput,setPasswordInput]= useState("");
+  const [passwordError,setPasswordError]= useState(false);
   const [users,        setUsers]        = useState(() => LS.get("eq_users",    DEFAULT_USERS));
   const [categories,   setCategories]   = useState(() => LS.get("eq_cats",     DEFAULT_CATS));
   const [expenses,     setExpenses]     = useState(() => LS.get("eq_expenses", SEED_EXP));
@@ -172,9 +166,7 @@ function App() {
     : expenses.filter(e=>e.userId===currentUser?.id && e.status==="approved");
 
   const myTotal    = approvedExp.reduce((s,e)=>s+e.amount, 0);
-  const myBudget   = isAdmin ? users.filter(u=>u.role==="member").reduce((s,u)=>s+u.budget,0) : (currentUser?.budget||0);
-  const budgetPct  = Math.min((myTotal/(myBudget||1))*100, 100);
-  const budgetLeft = myBudget - myTotal;
+
   const pendingN   = expenses.filter(e=>e.status==="pending").length;
   const statTotal  = approvedExp.reduce((s,e)=>s+e.amount, 0);
 
@@ -223,27 +215,74 @@ function App() {
   }
 
   // ── LOGIN ─────────────────────────────────────────────────────────────────
+  function handleSelectUser(u) {
+    setLoginStep(u);
+    setPasswordInput("");
+    setPasswordError(false);
+  }
+
+  function handlePasswordSubmit() {
+    if (passwordInput === loginStep.password) {
+      setCurrentUser(loginStep);
+      setLoginStep(null);
+      setPasswordInput("");
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+      setPasswordInput("");
+    }
+  }
+
   if (!currentUser) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:"20px",width:"100%",maxWidth:440,margin:"0 auto"}}>
       <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,fontWeight:800,letterSpacing:"-0.5px",marginBottom:4}}>GESTION DÉPENSES</div>
       <div style={{fontSize:10,color:"#555",letterSpacing:"0.15em",marginBottom:36}}>ÉQUIPE · MARS 2026</div>
-      <div style={{fontSize:10,color:"#444",letterSpacing:"0.1em",marginBottom:12,alignSelf:"flex-start"}}>CHOISIR VOTRE PROFIL</div>
-      <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%"}}>
-        {users.map(u=>(
-          <button key={u.id} className="ucard" onClick={()=>setCurrentUser(u)}
-            style={{background:"#16161E",borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,textAlign:"left",border:u.role==="admin"?"1px solid #E8845A33":"1px solid transparent",width:"100%"}}>
-            <div style={{fontSize:26}}>{u.avatar}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:500}}>{u.name}</div>
-              <div style={{fontSize:10,color:u.role==="admin"?"#E8845A":"#555",marginTop:2}}>
-                {u.role==="admin"?"👑 ADMINISTRATEUR":"Budget : "+fmt(u.budget)}
-              </div>
-            </div>
-            <div style={{fontSize:18,color:"#333"}}>›</div>
+
+      {!loginStep ? (
+        <>
+          <div style={{fontSize:10,color:"#444",letterSpacing:"0.1em",marginBottom:12,alignSelf:"flex-start"}}>CHOISIR VOTRE PROFIL</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%"}}>
+            {users.map(u=>(
+              <button key={u.id} className="ucard" onClick={()=>handleSelectUser(u)}
+                style={{background:"#16161E",borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,textAlign:"left",border:u.role==="admin"?"1px solid #E8845A33":"1px solid transparent",width:"100%"}}>
+                <div style={{fontSize:26}}>{u.avatar}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:500}}>{u.name}</div>
+                  <div style={{fontSize:10,color:u.role==="admin"?"#E8845A":"#555",marginTop:2}}>
+                    {u.role==="admin"?"👑 ADMINISTRATEUR":"Membre"}
+                  </div>
+                </div>
+                <div style={{fontSize:18,color:"#333"}}>›</div>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div style={{width:"100%"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+            <button onClick={()=>setLoginStep(null)} style={{background:"#1A1A22",color:"#888",borderRadius:8,padding:"6px 12px",fontSize:11}}>← Retour</button>
+            <div style={{fontSize:13,fontWeight:500}}>{loginStep.avatar} {loginStep.name}</div>
+          </div>
+          <div style={{fontSize:10,color:"#444",letterSpacing:"0.1em",marginBottom:10}}>MOT DE PASSE</div>
+          <input
+            autoFocus
+            type="password"
+            placeholder="Entrez votre mot de passe..."
+            value={passwordInput}
+            onChange={e=>{setPasswordInput(e.target.value);setPasswordError(false);}}
+            onKeyDown={e=>e.key==="Enter"&&handlePasswordSubmit()}
+            style={{width:"100%",background:"#16161E",border:passwordError?"1px solid #E85A5A":"1px solid #2A2A38",borderRadius:10,padding:"12px 16px",color:"#F0EDE8",fontSize:13,marginBottom:8}}
+          />
+          {passwordError && (
+            <div style={{fontSize:11,color:"#E85A5A",marginBottom:10}}>❌ Mot de passe incorrect, réessayez.</div>
+          )}
+          <button onClick={handlePasswordSubmit}
+            style={{width:"100%",background:"#E8845A",color:"#0F0F13",borderRadius:10,padding:"12px",fontSize:13,fontWeight:700,letterSpacing:"0.08em",marginTop:4}}>
+            CONNEXION ▶
           </button>
-        ))}
-      </div>
-      <div style={{marginTop:16,fontSize:10,color:"#2A2A38",textAlign:"center"}}>Données partagées via ce navigateur</div>
+        </div>
+      )}
+      <div style={{marginTop:20,fontSize:10,color:"#2A2A38",textAlign:"center"}}>Données partagées via ce navigateur</div>
     </div>
   );
 
@@ -283,25 +322,13 @@ function App() {
           </div>
         </div>
 
-        {/* BUDGET */}
-        <div style={{background:"#1A1A22",borderRadius:12,padding:"13px 16px",marginTop:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div>
-              <div style={{fontSize:10,color:"#666",letterSpacing:"0.1em",marginBottom:1}}>{isAdmin?"TOTAL APPROUVÉ (ÉQUIPE)":"DÉPENSÉ APPROUVÉ"}</div>
-              <div style={{fontFamily:"'Syne',sans-serif",fontSize:22,fontWeight:800,color:budgetPct>85?"#E85A5A":"#F0EDE8"}}>{fmt(myTotal)}</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:10,color:"#666",letterSpacing:"0.1em",marginBottom:1}}>{isAdmin?"BUDGET TOTAL":"MON BUDGET"}</div>
-              <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:"#E8845A"}}>{fmt(myBudget)}</div>
-            </div>
+        {/* TOTAL */}
+        <div style={{background:"#1A1A22",borderRadius:12,padding:"13px 16px",marginTop:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:10,color:"#666",letterSpacing:"0.1em",marginBottom:1}}>{isAdmin?"TOTAL APPROUVÉ (ÉQUIPE)":"MES DÉPENSES APPROUVÉES"}</div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontSize:22,fontWeight:800,color:"#F0EDE8"}}>{fmt(myTotal)}</div>
           </div>
-          <div style={{background:"#2A2A35",borderRadius:99,height:5,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${budgetPct}%`,background:budgetPct>85?"#E85A5A":budgetPct>60?"#E8D45A":"#5AE89B",borderRadius:99,transition:"width .6s cubic-bezier(.34,1.56,.64,1)"}}/>
-          </div>
-          <div style={{marginTop:5,fontSize:10,color:budgetLeft<0?"#E85A5A":"#5AE89B"}}>
-            {budgetLeft>=0?`▲ ${fmt(budgetLeft)} restants`:`▼ Dépassement de ${fmt(-budgetLeft)}`}
-            {isAdmin&&pendingN>0&&<span style={{marginLeft:12,color:"#E8D45A"}}>· {pendingN} en attente</span>}
-          </div>
+          {isAdmin&&pendingN>0&&<div style={{background:"#E8D45A18",border:"1px solid #E8D45A44",borderRadius:8,padding:"6px 12px",fontSize:11,color:"#E8D45A"}}>{pendingN} en attente</div>}
         </div>
       </div>
 
@@ -410,7 +437,7 @@ function App() {
                 const uExp=expenses.filter(e=>e.userId===u.id);
                 const uApp=uExp.filter(e=>e.status==="approved").reduce((s,e)=>s+e.amount,0);
                 const uPnd=uExp.filter(e=>e.status==="pending").length;
-                const uPct=Math.min((uApp/(u.budget||1))*100,100);
+
                 return (
                   <div key={u.id} style={{background:"#16161E",borderRadius:10,padding:"14px 16px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
@@ -422,20 +449,9 @@ function App() {
                           {uPnd>0&&<span style={{color:"#E8D45A",marginLeft:6}}>· {uPnd} en attente</span>}
                         </div>
                       </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:"#5AE89B"}}>{fmt(uApp)}</div>
-                        <div style={{fontSize:9,color:"#555"}}>/ {fmt(u.budget)}</div>
-                      </div>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:13,color:"#5AE89B"}}>{fmt(uApp)}</div>
                     </div>
-                    <div style={{background:"#2A2A35",borderRadius:99,height:4,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${uPct}%`,background:uPct>85?"#E85A5A":uPct>60?"#E8D45A":"#5AE89B",borderRadius:99,transition:"width .6s"}}/>
-                    </div>
-                    <div style={{marginTop:8,display:"flex",justifyContent:"flex-end"}}>
-                      <button onClick={()=>{
-                        const nb=prompt(`Budget de ${u.name} (DA) :`,u.budget);
-                        if(nb&&!isNaN(parseFloat(nb))) saveUsers(users.map(usr=>usr.id===u.id?{...usr,budget:parseFloat(nb)}:usr));
-                      }} style={{background:"#2A2A38",color:"#888",borderRadius:6,padding:"4px 10px",fontSize:9}}>✏️ Modifier budget</button>
-                    </div>
+
                   </div>
                 );
               })}
