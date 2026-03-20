@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ExpensesPro · Caisse & Banque</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <title>Dépenses Équipe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -21,817 +21,773 @@
       appId: "1:474872789938:web:d3821e317551b8956542ab"
     });
     const db = firebase.database();
-
     const toArr = v => {
       if (!v) return [];
       if (Array.isArray(v)) return v.filter(e => e && e.id);
       return Object.entries(v).filter(([,e]) => e).map(([k,e]) => ({...e, id: e.id||k}));
     };
-
     const FB = {
-      getExpenses:  ()  => db.ref("eq_expenses").once("value").then(s => toArr(s.val())),
-      getRevenues:  ()  => db.ref("eq_revenues").once("value").then(s => toArr(s.val())),
-      getCats:      ()  => db.ref("eq_cats").once("value").then(s => s.exists() ? toArr(s.val()) : null),
-      setCats:      v   => db.ref("eq_cats").set(v),
-      addExpense:   exp => db.ref("eq_expenses/"+String(exp.id)).set(exp),
-      markPaid:     id  => db.ref("eq_expenses/"+String(id)).update({status:"paid"}),
-      delExpense:   id  => db.ref("eq_expenses/"+String(id)).remove(),
-      addRevenue:   rev => db.ref("eq_revenues/"+String(rev.id)).set(rev),
-      delRevenue:   id  => db.ref("eq_revenues/"+String(id)).remove(),
+      getExp: () => db.ref("dp_expenses").once("value").then(s => toArr(s.val())),
+      addExp: e  => db.ref("dp_expenses/"+String(e.id)).set(e),
+      delExp: id => db.ref("dp_expenses/"+String(id)).remove(),
+      getVir: () => db.ref("dp_virements").once("value").then(s => toArr(s.val())),
+      addVir: v  => db.ref("dp_virements/"+String(v.id)).set(v),
+      delVir: id => db.ref("dp_virements/"+String(id)).remove(),
     };
   </script>
   <style>
-    :root{
-      --blue-900:#0F1F3D;--blue-700:#1E4D8C;--blue-600:#1D6AE5;--blue-500:#3B82F6;--blue-100:#DBEAFE;--blue-50:#EFF6FF;
-      --gray-900:#0F172A;--gray-700:#334155;--gray-600:#475569;--gray-500:#64748B;--gray-400:#94A3B8;
-      --gray-300:#CBD5E1;--gray-200:#E2E8F0;--gray-100:#F1F5F9;--gray-50:#F8FAFC;
-      --green:#10B981;--green-bg:#D1FAE5;--green-text:#065F46;
-      --amber:#F59E0B;--amber-bg:#FEF3C7;--amber-text:#92400E;
-      --red:#EF4444;--red-bg:#FEE2E2;--red-text:#991B1B;
-      --caisse:#8B5CF6;--caisse-bg:#EDE9FE;--caisse-text:#4C1D95;
-      --banque:#0EA5E9;--banque-bg:#E0F2FE;--banque-text:#0C4A6E;
-      --white:#FFFFFF;
-      --shadow-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
-      --shadow-lg:0 10px 40px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.08);
-      --r:12px;--r-sm:8px;--r-lg:16px;
+    :root {
+      --blue:#2563EB; --blue-l:#EFF6FF; --blue-d:#1D4ED8;
+      --green:#16A34A; --red:#DC2626;
+      --purple:#7C3AED; --purple-l:#EDE9FE;
+      --cyan:#0284C7; --cyan-l:#E0F2FE;
+      --gray-9:#111827; --gray-7:#374151; --gray-5:#6B7280;
+      --gray-3:#D1D5DB; --gray-2:#E5E7EB; --gray-1:#F9FAFB;
+      --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:0 4px 12px rgba(0,0,0,.08);
+      --shadow-lg:0 10px 25px rgba(0,0,0,.1),0 4px 10px rgba(0,0,0,.05);
+      --r:10px; --r-lg:14px;
     }
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--gray-50);font-family:'Inter',sans-serif;color:var(--gray-900);}
-    input,select,textarea{outline:none;font-family:inherit;}
-    button{cursor:pointer;font-family:inherit;border:none;}
-    ::-webkit-scrollbar{width:5px;}
-    ::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px;}
-    .fade-in{animation:fadeIn .3s ease forwards;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-    .slide-up{animation:slideUp .35s cubic-bezier(.34,1.56,.64,1) forwards;}
-    @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .pop{animation:pop .35s cubic-bezier(.34,1.56,.64,1) forwards;}
-    @keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--gray-1); font-family:'Inter',sans-serif; color:var(--gray-9); }
+    input,select,textarea { outline:none; font-family:inherit; }
+    button { cursor:pointer; font-family:inherit; border:none; }
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-thumb { background:var(--gray-3); border-radius:2px; }
+    .fade { animation:fadeIn .25s ease forwards; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    .sup { animation:sup .3s cubic-bezier(.34,1.56,.64,1) forwards; }
+    @keyframes sup { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
-    /* Sidebar */
-    .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--blue-900);display:flex;flex-direction:column;z-index:100;}
-    .sb-logo{padding:26px 22px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
-    .sb-logo h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;}
-    .sb-logo p{font-size:10px;color:rgba(255,255,255,.35);margin-top:3px;text-transform:uppercase;letter-spacing:.09em;}
-    .sb-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
-    .sb-section{font-size:9px;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.12em;padding:10px 10px 3px;}
-    .nav-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--r-sm);cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;transition:all .18s;position:relative;}
-    .nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9);}
-    .nav-item.active{background:var(--blue-600);color:#fff;box-shadow:0 4px 12px rgba(29,106,229,.35);}
-    .nav-badge{position:absolute;right:10px;background:var(--red);color:#fff;border-radius:99px;min-width:17px;height:17px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;}
-    .sb-footer{padding:14px 10px;border-top:1px solid rgba(255,255,255,.08);}
-    .user-chip{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--r-sm);background:rgba(255,255,255,.07);}
-    .ua{width:30px;height:30px;border-radius:50%;background:var(--blue-600);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
-    .un{font-size:12px;font-weight:600;color:#fff;}
-    .ur{font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;}
-    .logout-btn{margin-top:7px;width:100%;padding:7px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);border-radius:var(--r-sm);font-size:11px;transition:all .2s;}
-    .logout-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);}
+    /* LOGIN */
+    .login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(135deg,#1e3a8a,#2563EB); }
+    .login-box { background:#fff; border-radius:var(--r-lg); padding:32px 28px; width:100%; max-width:380px; box-shadow:var(--shadow-lg); }
+    .login-logo { text-align:center; margin-bottom:22px; }
+    .login-logo h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:21px; font-weight:800; color:var(--gray-9); }
+    .login-logo p { font-size:12px; color:var(--gray-5); margin-top:3px; }
+    .profiles { display:flex; flex-direction:column; gap:7px; }
+    .pbtn { display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:var(--r); border:1.5px solid var(--gray-3); background:#fff; cursor:pointer; transition:all .15s; text-align:left; width:100%; }
+    .pbtn:hover { border-color:var(--blue); background:var(--blue-l); }
+    .pbtn.adm { border-color:#BFDBFE; background:var(--blue-l); }
+    .pav { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+    .pav.a { background:#DBEAFE; } .pav.m { background:#F3F4F6; }
+    .pname { font-size:13px; font-weight:600; color:var(--gray-9); }
+    .prole { font-size:11px; color:var(--gray-5); margin-top:1px; }
+    .adm .prole { color:var(--blue); }
+    .pw-back { background:none; border:none; color:var(--gray-5); font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; margin-bottom:14px; padding:0; }
+    .inp { width:100%; padding:9px 12px; background:var(--gray-1); border:1.5px solid var(--gray-3); border-radius:var(--r); font-size:13px; color:var(--gray-9); transition:border .15s; }
+    .inp:focus { border-color:var(--blue); background:#fff; }
+    .inp.err { border-color:var(--red); }
+    .errmsg { color:var(--red); font-size:11px; margin-top:4px; }
 
-    /* Main */
-    .main{margin-left:240px;padding:28px 28px 70px;}
-    .ph{margin-bottom:22px;display:flex;justify-content:space-between;align-items:flex-start;}
-    .pt{font-family:'Plus Jakarta Sans',sans-serif;font-size:23px;font-weight:800;color:var(--gray-900);letter-spacing:-.4px;}
-    .ps{font-size:12px;color:var(--gray-500);margin-top:3px;}
+    /* BUTTONS */
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:9px 16px; border-radius:var(--r); font-size:12px; font-weight:600; transition:all .15s; cursor:pointer; border:none; }
+    .btn-blue { background:var(--blue); color:#fff; } .btn-blue:hover { background:var(--blue-d); }
+    .btn-green { background:var(--green); color:#fff; } .btn-green:hover { background:#15803D; }
+    .btn-ghost { background:#fff; color:var(--gray-7); border:1.5px solid var(--gray-3); } .btn-ghost:hover { background:var(--gray-1); }
+    .btn-sm { padding:5px 11px; font-size:11px; }
+    .btn-icon { width:28px; height:28px; padding:0; border-radius:8px; font-size:12px; }
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .w-full { width:100%; }
 
-    /* Solde cards */
-    .solde-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:22px;}
-    .solde-card{border-radius:var(--r-lg);padding:20px 22px;border:1px solid var(--gray-200);background:var(--white);position:relative;overflow:hidden;}
-    .solde-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;}
-    .solde-card.caisse::before{background:var(--caisse);}
-    .solde-card.banque::before{background:var(--banque);}
-    .solde-card.total::before{background:var(--blue-600);}
-    .sc-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px;}
-    .sc-icon.caisse{background:var(--caisse-bg);}
-    .sc-icon.banque{background:var(--banque-bg);}
-    .sc-icon.total{background:var(--blue-50);}
-    .sc-label{font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
-    .sc-value{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.4px;}
-    .sc-sub{font-size:11px;color:var(--gray-400);margin-top:4px;}
-    .sc-breakdown{display:flex;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);}
-    .sc-br-item{flex:1;}
-    .sc-br-label{font-size:10px;color:var(--gray-400);}
-    .sc-br-val{font-size:12px;font-weight:700;margin-top:1px;}
+    /* APP */
+    .app { max-width:960px; margin:0 auto; padding:16px 14px 80px; }
 
-    /* Cards */
-    .card{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--gray-200);}
-    .card-hdr{padding:16px 20px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;}
-    .card-title{font-size:13px;font-weight:700;color:var(--gray-700);}
+    /* TOPBAR */
+    .topbar { background:#fff; border-bottom:1px solid var(--gray-2); position:sticky; top:0; z-index:50; margin:-16px -14px 18px; padding:0 14px; }
+    .tbi { max-width:960px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:52px; gap:10px; }
+    .tb-logo { font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; color:var(--gray-9); white-space:nowrap; }
+    .tb-right { display:flex; align-items:center; gap:7px; }
+    .tb-name { font-size:12px; font-weight:600; color:var(--gray-7); }
+    .tb-role { font-size:10px; color:var(--gray-5); }
 
-    /* Table */
-    table{width:100%;border-collapse:collapse;}
-    th{font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);text-align:left;}
-    td{padding:12px 14px;border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700);vertical-align:middle;}
-    tr:last-child td{border-bottom:none;}
-    tr:hover td{background:var(--gray-50);}
-    .row-acts{opacity:0;transition:opacity .15s;display:flex;gap:6px;}
-    tr:hover .row-acts{opacity:1;}
+    /* MAIN LAYOUT: left cards + right pie */
+    .main-layout { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; align-items:start; }
+    .layout-left { display:flex; flex-direction:column; gap:10px; }
+    .layout-right { position:sticky; top:70px; }
+    @media(max-width:650px) { .main-layout { grid-template-columns:1fr; } .layout-right { position:static; } }
 
-    /* Badges */
-    .badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:600;}
-    .badge.pending{background:var(--amber-bg);color:var(--amber-text);}
-    .badge.paid{background:var(--green-bg);color:var(--green-text);}
-    .badge.caisse{background:var(--caisse-bg);color:var(--caisse-text);}
-    .badge.banque{background:var(--banque-bg);color:var(--banque-text);}
+    /* MEMBER CARDS (admin) */
+    .mc { background:#fff; border-radius:var(--r-lg); box-shadow:var(--shadow); overflow:hidden; cursor:pointer; transition:box-shadow .15s; border:2px solid transparent; }
+    .mc:hover { box-shadow:var(--shadow-md); }
+    .mc.sel { border-color:var(--blue); }
+    .mc-head { padding:12px 14px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--gray-1); }
+    .mc-av { width:38px; height:38px; border-radius:50%; background:var(--blue-l); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    .mc-name { font-size:14px; font-weight:700; color:var(--gray-9); }
+    .mc-sub { font-size:11px; color:var(--gray-5); margin-top:1px; }
+    .mc-body { padding:10px 14px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+    .mc-stat { text-align:center; }
+    .mc-lbl { font-size:9px; font-weight:600; color:var(--gray-5); text-transform:uppercase; letter-spacing:.05em; }
+    .mc-val { font-size:12px; font-weight:800; margin-top:2px; }
+    .sep { height:14px; border-bottom:2px dashed var(--gray-2); margin-bottom:0; }
 
-    /* Buttons */
-    .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:var(--r-sm);font-size:12px;font-weight:600;transition:all .18s;cursor:pointer;border:none;}
-    .btn-primary{background:var(--blue-600);color:#fff;box-shadow:0 2px 8px rgba(29,106,229,.25);}
-    .btn-primary:hover{background:var(--blue-700);transform:translateY(-1px);}
-    .btn-caisse{background:var(--caisse);color:#fff;}
-    .btn-caisse:hover{background:#7C3AED;}
-    .btn-banque{background:var(--banque);color:#fff;}
-    .btn-banque:hover{background:#0284C7;}
-    .btn-ghost{background:transparent;color:var(--gray-600);border:1px solid var(--gray-200);}
-    .btn-ghost:hover{background:var(--gray-50);}
-    .btn-sm{padding:5px 11px;font-size:11px;}
-    .btn-icon{width:28px;height:28px;padding:0;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:12px;}
-    .btn-pay{background:var(--green-bg);color:var(--green-text);border:1px solid #A7F3D0;font-size:11px;padding:5px 10px;}
-    .btn-pay:hover{background:#A7F3D0;}
+    /* SOLDE CARDS (members) */
+    .sc { background:#fff; border-radius:var(--r-lg); padding:14px 16px; box-shadow:var(--shadow); border-top:3px solid var(--gray-3); }
+    .sc.caisse { border-color:var(--purple); }
+    .sc.banque { border-color:var(--cyan); }
+    .sc.global { border-color:var(--blue); }
+    .sc-lbl { font-size:10px; font-weight:600; color:var(--gray-5); text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
+    .sc-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; }
+    .sc-rows { display:flex; gap:12px; margin-top:8px; padding-top:8px; border-top:1px solid var(--gray-2); }
+    .sc-row { flex:1; }
+    .sc-row-lbl { font-size:10px; color:var(--gray-5); }
+    .sc-row-val { font-size:12px; font-weight:700; margin-top:1px; }
 
-    /* Filters */
-    .filters{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
-    .filter-btn{padding:5px 13px;border-radius:99px;font-size:11px;font-weight:500;background:var(--white);border:1px solid var(--gray-200);color:var(--gray-600);transition:all .18s;cursor:pointer;}
-    .filter-btn.active{background:var(--blue-600);border-color:var(--blue-600);color:#fff;}
-    .filter-select{padding:5px 11px;border-radius:99px;font-size:11px;background:var(--white);border:1px solid var(--gray-200);color:var(--gray-600);cursor:pointer;}
+    /* PIE CHART */
+    .pie { background:#fff; border-radius:var(--r-lg); padding:16px 18px; box-shadow:var(--shadow); display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .pie-title { font-size:11px; font-weight:700; color:var(--gray-5); text-transform:uppercase; letter-spacing:.07em; align-self:flex-start; }
+    .pie-empty { color:var(--gray-5); font-size:12px; padding:30px 0; text-align:center; }
+    .pie-legend { width:100%; display:flex; flex-direction:column; gap:6px; }
+    .pie-row { display:flex; align-items:center; gap:7px; }
+    .pie-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .pie-label { font-size:11px; color:var(--gray-7); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pie-pct { font-size:11px; font-weight:700; color:var(--gray-9); }
+    .pie-amt { font-size:10px; color:var(--gray-5); }
 
-    /* Form */
-    .form-group{margin-bottom:13px;}
-    .form-label{display:block;font-size:11px;font-weight:600;color:var(--gray-600);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;}
-    .form-input{width:100%;padding:9px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r-sm);font-size:13px;color:var(--gray-900);transition:border .18s;}
-    .form-input:focus{border-color:var(--blue-500);background:#fff;}
-    .form-input.error{border-color:var(--red);}
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    /* TABS */
+    .tab-bar { display:flex; gap:2px; background:var(--gray-2); border-radius:var(--r); padding:3px; margin-bottom:14px; }
+    .tab { flex:1; padding:7px; border-radius:8px; font-size:12px; font-weight:600; color:var(--gray-5); border:none; background:none; cursor:pointer; transition:all .15s; text-align:center; }
+    .tab.on { background:#fff; color:var(--gray-9); box-shadow:var(--shadow); }
 
-    /* Type selector */
-    .type-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-    .type-btn{padding:12px;border-radius:var(--r-sm);border:2px solid var(--gray-200);cursor:pointer;text-align:center;transition:all .18s;background:#fff;}
-    .type-btn.caisse.selected{border-color:var(--caisse);background:var(--caisse-bg);}
-    .type-btn.banque.selected{border-color:var(--banque);background:var(--banque-bg);}
-    .type-btn:hover{border-color:var(--gray-300);}
-    .type-icon{font-size:22px;margin-bottom:4px;}
-    .type-label{font-size:12px;font-weight:600;color:var(--gray-700);}
-    .type-sub{font-size:10px;color:var(--gray-400);margin-top:2px;}
+    /* FILTERS */
+    .toolbar { display:flex; align-items:center; gap:7px; margin-bottom:12px; flex-wrap:wrap; }
+    .chip { padding:5px 12px; border-radius:99px; font-size:11px; font-weight:500; border:1.5px solid var(--gray-3); background:#fff; color:var(--gray-5); cursor:pointer; transition:all .15s; }
+    .chip:hover { border-color:var(--blue); color:var(--blue); }
+    .chip.on { background:var(--blue); border-color:var(--blue); color:#fff; }
 
-    /* Modal */
-    .overlay{position:fixed;inset:0;background:rgba(15,31,61,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
-    .modal{background:#fff;border-radius:var(--r-lg);padding:24px;width:100%;max-width:460px;box-shadow:var(--shadow-lg);}
-    .modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:var(--gray-900);margin-bottom:16px;}
-    .modal-footer{display:flex;gap:10px;margin-top:18px;}
+    /* LISTS */
+    .list { display:flex; flex-direction:column; gap:7px; }
+    .exp-card { background:#fff; border-radius:var(--r); padding:12px 14px; box-shadow:var(--shadow); display:flex; align-items:center; gap:12px; border-left:4px solid transparent; transition:box-shadow .15s; }
+    .exp-card:hover { box-shadow:var(--shadow-md); }
+    .exp-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    .exp-name { font-size:13px; font-weight:600; color:var(--gray-9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .exp-meta { font-size:11px; color:var(--gray-5); margin-top:2px; display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+    .exp-amt { font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800; white-space:nowrap; }
+    .exp-acts { opacity:0; transition:opacity .15s; display:flex; gap:4px; flex-shrink:0; }
+    .exp-card:hover .exp-acts { opacity:1; }
+    .dot { width:3px; height:3px; border-radius:50%; background:var(--gray-3); display:inline-block; flex-shrink:0; }
+    .vir-card { background:#fff; border-radius:var(--r); padding:12px 14px; box-shadow:var(--shadow); display:flex; align-items:center; gap:12px; border-left:4px solid transparent; }
+    .vir-card.caisse { border-color:var(--purple); }
+    .vir-card.banque { border-color:var(--cyan); }
+    .badge { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:99px; font-size:10px; font-weight:600; }
+    .badge.caisse { background:var(--purple-l); color:#4C1D95; }
+    .badge.banque { background:var(--cyan-l); color:#0C4A6E; }
+    .date-sep { font-size:10px; font-weight:700; color:var(--gray-5); text-transform:uppercase; letter-spacing:.08em; margin:12px 0 6px; padding-left:2px; }
+    .empty { text-align:center; padding:40px 20px; color:var(--gray-5); }
 
-    /* Toast */
-    .toast{position:fixed;top:18px;right:18px;padding:10px 16px;border-radius:var(--r-sm);font-size:12px;font-weight:500;z-index:9999;box-shadow:var(--shadow-lg);color:#fff;display:flex;align-items:center;gap:7px;}
+    /* FORM MODAL */
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:flex-end; justify-content:center; }
+    @media(min-width:600px) { .overlay { align-items:center; padding:20px; } }
+    .modal { background:#fff; border-radius:16px 16px 0 0; padding:20px 18px 30px; width:100%; max-width:460px; box-shadow:var(--shadow-lg); }
+    @media(min-width:600px) { .modal { border-radius:var(--r-lg); padding:22px 20px; } }
+    .modal-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:800; margin-bottom:14px; }
+    .fg { margin-bottom:11px; }
+    .fl { display:block; font-size:10px; font-weight:700; color:var(--gray-5); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .mf { display:flex; gap:9px; margin-top:14px; }
+    .cat-pick { display:flex; flex-wrap:wrap; gap:5px; }
+    .cpill { padding:5px 11px; border-radius:99px; border:1.5px solid var(--gray-3); font-size:11px; cursor:pointer; background:#fff; transition:all .15s; display:flex; align-items:center; gap:4px; }
+    .cpill.on { border-width:2px; }
+    .type-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .tbtn { padding:11px; border-radius:var(--r); border:2px solid var(--gray-3); cursor:pointer; text-align:center; background:#fff; transition:all .15s; }
+    .tbtn.caisse.on { border-color:var(--purple); background:var(--purple-l); }
+    .tbtn.banque.on { border-color:var(--cyan); background:var(--cyan-l); }
 
-    /* Progress bar */
-    .progress-bar{position:fixed;top:0;left:0;right:0;height:3px;background:var(--blue-600);z-index:9999;}
+    /* TOAST & LOADBAR */
+    .toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--gray-9); color:#fff; padding:9px 16px; border-radius:99px; font-size:12px; font-weight:500; z-index:999; white-space:nowrap; box-shadow:var(--shadow-lg); }
+    .loadbar { position:fixed; top:0; left:0; right:0; height:2px; background:var(--blue); z-index:999; }
 
-    /* Login */
-    .login-page{min-height:100vh;display:flex;}
-    .login-left{width:400px;flex-shrink:0;background:var(--blue-900);display:flex;flex-direction:column;justify-content:center;padding:48px;}
-    .login-right{flex:1;display:flex;align-items:center;justify-content:center;padding:32px;background:var(--gray-50);}
-    .login-brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:25px;font-weight:800;color:#fff;margin-bottom:6px;}
-    .login-tag{font-size:13px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:34px;}
-    .login-feat{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:rgba(255,255,255,.65);font-size:12px;}
-    .login-feat-icon{width:28px;height:28px;background:rgba(255,255,255,.1);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
-    .login-card{background:#fff;border-radius:var(--r-lg);padding:32px;width:100%;max-width:400px;box-shadow:var(--shadow-lg);border:1px solid var(--gray-200);}
-    .login-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px;}
-    .login-card-sub{font-size:12px;color:var(--gray-500);margin-bottom:22px;}
-    .profile-grid{display:flex;flex-direction:column;gap:8px;}
-    .profile-btn{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:var(--r-sm);border:1.5px solid var(--gray-200);background:#fff;cursor:pointer;transition:all .18s;text-align:left;width:100%;}
-    .profile-btn:hover{border-color:var(--blue-500);background:var(--blue-50);}
-    .profile-btn.adm{border-color:var(--blue-200);background:var(--blue-50);}
-    .profile-btn.adm:hover{border-color:var(--blue-500);background:var(--blue-100);}
-
-    /* Sync bar */
-    #sync-bar{position:fixed;bottom:0;left:240px;right:0;background:#fff;border-top:1px solid var(--gray-200);padding:5px 22px;font-size:10px;color:var(--gray-400);display:flex;align-items:center;gap:7px;z-index:50;}
-    .sync-dot{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite;}
-    .sync-dot.ok{background:var(--green);}
-    .sync-dot.err{background:var(--red);}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-    @media(max-width:768px){
-      .sidebar,.login-left{display:none;}
-      .main{margin-left:0;padding:16px;}
-      .solde-grid{grid-template-columns:1fr;}
-      #sync-bar{left:0;}
-    }
+    /* SYNC */
+    #syncbar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--gray-2); padding:4px 14px; font-size:10px; color:var(--gray-5); display:flex; align-items:center; gap:5px; z-index:40; }
+    .sdot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    .sdot.ok { background:var(--green); } .sdot.err { background:var(--red); }
   </style>
 </head>
 <body>
 <div id="root"></div>
-<div id="sync-bar">
-  <span class="sync-dot ok" id="sdot"></span>
-  <span id="sst">Chargement...</span> · <span id="stm">—</span>
-  <span id="rbtn" style="margin-left:auto;cursor:pointer;color:var(--blue-600);display:none" onclick="window._loadAll&&window._loadAll()">↻ Actualiser</span>
-</div>
+<div id="syncbar"><span class="sdot ok" id="sdot"></span><span id="smsg">Chargement...</span></div>
 
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const DEFAULT_CATS = [
-  { id:"siege",       label:"Frais Siège",         icon:"🏢", color:"#1D6AE5" },
-  { id:"atelier",     label:"Frais Atelier",        icon:"🔧", color:"#8B5CF6" },
-  { id:"projets",     label:"Frais Projets",        icon:"📋", color:"#10B981" },
-  { id:"essence",     label:"Essence",              icon:"⛽", color:"#F59E0B" },
-  { id:"maintenance", label:"Maintenance Voitures", icon:"🚘", color:"#EF4444" },
-  { id:"deplacement", label:"Déplacements",         icon:"✈️", color:"#06B6D4" },
-  { id:"other",       label:"Autre",                icon:"📦", color:"#64748B" },
+const USERS = [
+  { id:"admin",  name:"Administrateur", role:"admin",  pw:"admin2026", avatar:"👑" },
+  { id:"u1",     name:"Youcef",         role:"member", pw:"y123",      avatar:"🧑" },
+  { id:"u2",     name:"Souad",          role:"member", pw:"s123",      avatar:"🧑" },
+  { id:"u3",     name:"Belmahi",        role:"member", pw:"b123",      avatar:"🧑" },
+  { id:"u4",     name:"Tariq",          role:"member", pw:"t123",      avatar:"🧑" },
+  { id:"u5",     name:"Amine",          role:"member", pw:"a123",      avatar:"🧑" },
 ];
 
-const COLORS = ["#1D6AE5","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#64748B","#06B6D4","#84CC16","#F97316","#6366F1","#14B8A6"];
-const ICONS  = ["🏢","🔧","📋","⛽","🚘","✈️","📦","🍽️","🚗","🏠","💊","🎮","☕","🛒","💡","📱","🎓","🏦","🎁","📊","💰","🏭"];
-
-const DEFAULT_USERS = [
-  { id:"admin",  name:"Youcef",  role:"admin",  avatar:"👑", password:"admin2026" },
-  { id:"admin2", name:"Souad",   role:"admin",  avatar:"👑", password:"admin2027" },
-  { id:"user1",  name:"Belmahi", role:"member", avatar:"👤", password:"b123" },
-  { id:"user2",  name:"Tariq",   role:"member", avatar:"👤", password:"t123" },
-  { id:"user3",  name:"Amine",   role:"member", avatar:"👤", password:"a123" },
+const CATS = [
+  { id:"siege",       label:"Frais Siège",   icon:"🏢", color:"#2563EB" },
+  { id:"atelier",     label:"Frais Atelier", icon:"🔧", color:"#7C3AED" },
+  { id:"projets",     label:"Frais Projets", icon:"📋", color:"#059669" },
+  { id:"essence",     label:"Essence",       icon:"⛽", color:"#D97706" },
+  { id:"maintenance", label:"Maintenance",   icon:"🚘", color:"#DC2626" },
+  { id:"deplacement", label:"Déplacements",  icon:"✈️", color:"#0284C7" },
+  { id:"repas",       label:"Repas",         icon:"🍽️", color:"#EA580C" },
+  { id:"other",       label:"Autre",         icon:"📦", color:"#6B7280" },
 ];
 
-// vtype: "caisse" | "banque"
-const VTYPES = {
-  caisse: { label:"Virement Caisse",   icon:"🏦", color:"#8B5CF6", cls:"caisse" },
-  banque: { label:"Virement Bancaire", icon:"🏛️", color:"#0EA5E9", cls:"banque" },
-};
+function fmt(n)  { return new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(n||0)+" DA"; }
+function fmtS(n) { return (n>=0?"+":"-")+new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(Math.abs(n||0))+" DA"; }
+function getUser(id) { return USERS.find(u=>u.id===id)||{name:"?",avatar:"👤"}; }
+function getCat(id)  { return CATS.find(c=>c.id===id)||CATS[CATS.length-1]; }
 
-function fmt(n) { return new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(n||0)+" DA"; }
-function fmtS(n) { const s=fmt(Math.abs(n||0)); return (n||0)>=0?"+"+s:"-"+s; }
-
-function setSyncUI(ok, msg, time) {
-  const d=document.getElementById("sdot"),s=document.getElementById("sst"),t=document.getElementById("stm");
-  if(d){d.className="sync-dot "+(ok?"ok":"err");}
-  if(s) s.textContent=msg;
-  if(t&&time) t.textContent=time;
+function calcSolde(userId, expenses, virements) {
+  const virC = virements.filter(v=>v.toUserId===userId&&v.vtype==="caisse").reduce((s,v)=>s+(v.amount||0),0);
+  const virB = virements.filter(v=>v.toUserId===userId&&v.vtype==="banque").reduce((s,v)=>s+(v.amount||0),0);
+  const dep  = expenses.filter(e=>e.userId===userId).reduce((s,e)=>s+(e.amount||0),0);
+  return { virC, virB, dep, solde: virC+virB-dep };
 }
 
+function groupByDate(arr) {
+  const g = {};
+  [...arr].sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(e=>{
+    const d = e.date||""; if(!g[d]) g[d]=[]; g[d].push(e);
+  });
+  return Object.entries(g);
+}
+
+function fmtDate(d) {
+  try {
+    const dt=new Date(d+"T00:00:00"), today=new Date(); today.setHours(0,0,0,0);
+    const yest=new Date(today); yest.setDate(yest.getDate()-1);
+    if(dt.getTime()===today.getTime()) return "Aujourd'hui";
+    if(dt.getTime()===yest.getTime())  return "Hier";
+    return dt.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  } catch { return d; }
+}
+
+function setSyncUI(ok, msg) {
+  const d=document.getElementById("sdot"), m=document.getElementById("smsg");
+  if(d) d.className="sdot "+(ok?"ok":"err");
+  if(m) m.textContent=msg;
+}
+
+// ── Pie Chart Component ───────────────────────────────────────────────────────
+function PieChart({ expenses, title }) {
+  const catTotals = CATS.map(c=>({
+    ...c,
+    total: expenses.filter(e=>e.cat===c.id).reduce((s,e)=>s+(e.amount||0),0)
+  })).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+
+  const total = catTotals.reduce((s,c)=>s+c.total,0);
+
+  if (catTotals.length===0) return (
+    <div className="pie">
+      <div className="pie-title">{title}</div>
+      <div className="pie-empty">📊 Aucune dépense</div>
+    </div>
+  );
+
+  const R=80, r=44, cx=92, cy=92;
+  let cum = -Math.PI/2;
+  const slices = catTotals.map(c=>{
+    const a = (c.total/total)*2*Math.PI;
+    const x1=cx+R*Math.cos(cum), y1=cy+R*Math.sin(cum);
+    cum += a;
+    const x2=cx+R*Math.cos(cum), y2=cy+R*Math.sin(cum);
+    const xi1=cx+r*Math.cos(cum-a), yi1=cy+r*Math.sin(cum-a);
+    const xi2=cx+r*Math.cos(cum),   yi2=cy+r*Math.sin(cum);
+    const lg = a>Math.PI?1:0;
+    const d = [
+      "M",x1.toFixed(1),y1.toFixed(1),
+      "A",R,R,"0",lg,"1",x2.toFixed(1),y2.toFixed(1),
+      "L",xi2.toFixed(1),yi2.toFixed(1),
+      "A",r,r,"0",lg,"0",xi1.toFixed(1),yi1.toFixed(1),
+      "Z"
+    ].join(" ");
+    return {...c, d, pct:((c.total/total)*100).toFixed(1)};
+  });
+
+  return (
+    <div className="pie">
+      <div className="pie-title">{title}</div>
+      <svg width="184" height="184" viewBox="0 0 184 184">
+        {slices.map(s=>(
+          <path key={s.id} d={s.d} fill={s.color} stroke="#fff" strokeWidth="2">
+            <title>{s.label} — {s.pct}%</title>
+          </path>
+        ))}
+        <circle cx={cx} cy={cy} r="36" fill="#fff"/>
+        <text x={cx} y={cy-7} textAnchor="middle" style={{fontSize:10,fill:"#6B7280",fontFamily:"Inter,sans-serif"}}>Total</text>
+        <text x={cx} y={cy+8} textAnchor="middle" style={{fontSize:11,fill:"#111827",fontWeight:700,fontFamily:"Inter,sans-serif"}}>
+          {total>=1000?(total/1000).toFixed(0)+"k":total} DA
+        </text>
+      </svg>
+      <div className="pie-legend">
+        {slices.map(s=>(
+          <div key={s.id} className="pie-row">
+            <div className="pie-dot" style={{background:s.color}}/>
+            <span className="pie-label">{s.icon} {s.label}</span>
+            <span className="pie-pct">{s.pct}%</span>
+            <span className="pie-amt">{new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(s.total)} DA</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
 function App() {
-  const [currentUser, setCurrentUser] = useState(()=>{ try{const s=localStorage.getItem("eq_session");return s?JSON.parse(s):null;}catch{return null;} });
-  const [loginStep,   setLoginStep]   = useState(null);
-  const [pwInput,     setPwInput]     = useState("");
-  const [pwError,     setPwError]     = useState(false);
-  const [users]                       = useState(DEFAULT_USERS);
-  const [categories,  setCategories]  = useState(DEFAULT_CATS);
-  const [expenses,    setExpenses]    = useState([]);
-  const [revenues,    setRevenues]    = useState([]);
-  const [view,        setView]        = useState("dashboard");
-  const [fStatus,     setFStatus]     = useState("all");
-  const [fVtype,      setFVtype]      = useState("all");
-  const [fMember,     setFMember]     = useState("all");
-  const [showExpForm, setShowExpForm] = useState(false);
-  const [showRevForm, setShowRevForm] = useState(false);
-  const [editingCat,  setEditingCat]  = useState(null);
-  const [iconOpen,    setIconOpen]    = useState(false);
-  const [toast,       setToast]       = useState(null);
-  const [loading,     setLoading]     = useState(false);
+  const [user,      setUser]      = useState(()=>{ try{const s=localStorage.getItem("dp_s");return s?JSON.parse(s):null;}catch{return null;} });
+  const [loginStep, setLoginStep] = useState(null);
+  const [pw,        setPw]        = useState("");
+  const [pwErr,     setPwErr]     = useState(false);
+  const [expenses,  setExpenses]  = useState([]);
+  const [virements, setVirements] = useState([]);
+  const [loading,   setLoading]   = useState(false);
+  const [toast,     setToast]     = useState(null);
+  const [tab,       setTab]       = useState("depenses");
+  const [filterCat, setFilterCat] = useState("all");
+  const [selMember, setSelMember] = useState(null);
+  const [showExp,   setShowExp]   = useState(false);
+  const [showVir,   setShowVir]   = useState(false);
+  const [expForm,   setExpForm]   = useState({label:"",amount:"",cat:"siege",date:new Date().toISOString().slice(0,10),note:""});
+  const [virForm,   setVirForm]   = useState({label:"",amount:"",vtype:"caisse",toUserId:"u1",date:new Date().toISOString().slice(0,10),note:""});
 
-  const [expForm, setExpForm] = useState({label:"",amount:"",category:"siege",vtype:"caisse",date:new Date().toISOString().slice(0,10),note:""});
-  const [revForm, setRevForm] = useState({label:"",amount:"",vtype:"caisse",userId:"user1",date:new Date().toISOString().slice(0,10),note:""});
+  const isAdmin = user?.role==="admin";
 
-  const isAdmin = currentUser?.role==="admin";
-
-  // ── Load ────────────────────────────────────────────────────────────────────
-  const loadAll = useCallback(async () => {
+  const load = useCallback(async()=>{
     try {
-      const [exps, revs] = await Promise.all([FB.getExpenses(), FB.getRevenues()]);
-      setExpenses(exps); setRevenues(revs);
-      setSyncUI(true, "Synchronisé", new Date().toLocaleTimeString("fr-FR"));
-    } catch { setSyncUI(false, "Erreur connexion", null); }
-  }, []);
+      const [exps,virs] = await Promise.all([FB.getExp(), FB.getVir()]);
+      setExpenses(exps); setVirements(virs);
+      setSyncUI(true,"Synchronisé · "+new Date().toLocaleTimeString("fr-FR"));
+    } catch { setSyncUI(false,"Erreur de connexion"); }
+  },[]);
 
-  useEffect(() => {
-    if (!currentUser) return;
-    FB.getCats().then(c => { if(c&&c.length) setCategories(c); else FB.setCats(DEFAULT_CATS); }).catch(()=>{});
-    loadAll();
-    window._loadAll = loadAll;
-    const rb = document.getElementById("rbtn");
-    if (rb) rb.style.display = "block";
-    const iv = setInterval(loadAll, 5000);
-    const onVis = () => { if(document.visibilityState==="visible") loadAll(); };
-    document.addEventListener("visibilitychange", onVis);
-    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
-  }, [currentUser?.id]);
+  useEffect(()=>{
+    if(!user) return;
+    load();
+    const iv=setInterval(load,5000);
+    const onVis=()=>{ if(document.visibilityState==="visible") load(); };
+    document.addEventListener("visibilitychange",onVis);
+    return()=>{ clearInterval(iv); document.removeEventListener("visibilitychange",onVis); };
+  },[user?.id]);
 
-  const getCat   = id => categories.find(c=>c.id===id)||{label:"Autre",icon:"📦",color:"#64748B"};
-  const getUser  = id => users.find(u=>u.id===id)||{name:"Inconnu",avatar:"👤"};
-  const showToast= (msg,color="#10B981") => { setToast({msg,color}); setTimeout(()=>setToast(null),2800); };
+  const showToast = msg=>{ setToast(msg); setTimeout(()=>setToast(null),2200); };
 
-  // ── Finance calculations ─────────────────────────────────────────────────────
-  function calcSoldes() {
-    const totalCaisse  = revenues.filter(r=>r.vtype==="caisse").reduce((s,r)=>s+(r.amount||0),0);
-    const totalBanque  = revenues.filter(r=>r.vtype==="banque").reduce((s,r)=>s+(r.amount||0),0);
-    const depCaisse    = expenses.filter(e=>e.vtype==="caisse"&&e.status==="paid").reduce((s,e)=>s+(e.amount||0),0);
-    const depBanque    = expenses.filter(e=>e.vtype==="banque"&&e.status==="paid").reduce((s,e)=>s+(e.amount||0),0);
-    const depPendingC  = expenses.filter(e=>e.vtype==="caisse"&&e.status==="pending").reduce((s,e)=>s+(e.amount||0),0);
-    const depPendingB  = expenses.filter(e=>e.vtype==="banque"&&e.status==="pending").reduce((s,e)=>s+(e.amount||0),0);
-    return {
-      caisse: { entrees:totalCaisse, sorties:depCaisse, solde:totalCaisse-depCaisse, pending:depPendingC },
-      banque: { entrees:totalBanque, sorties:depBanque, solde:totalBanque-depBanque, pending:depPendingB },
-    };
-  }
+  // Filtered data
+  const myExp = isAdmin
+    ? (selMember ? expenses.filter(e=>e.userId===selMember) : expenses)
+    : expenses.filter(e=>e.userId===user?.id);
 
-  // ── Actions ──────────────────────────────────────────────────────────────────
-  async function markPaid(id) {
-    setExpenses(prev=>prev.map(e=>String(e.id)===String(id)?{...e,status:"paid"}:e));
-    setLoading(true);
-    try { await FB.markPaid(id); showToast("Dépense marquée Payée ✅"); }
-    catch(err) { showToast("Erreur: "+err.message,"#EF4444"); await loadAll(); }
-    setLoading(false);
-  }
+  const myVir = isAdmin
+    ? (selMember ? virements.filter(v=>v.toUserId===selMember) : virements)
+    : virements.filter(v=>v.toUserId===user?.id);
 
+  const filteredExp = myExp.filter(e=>filterCat==="all"||e.cat===filterCat);
+  const grouped     = groupByDate(filteredExp);
+
+  // Actions
   async function addExpense() {
-    if (!expForm.label||!expForm.amount||isNaN(parseFloat(expForm.amount))) return;
-    const exp = {id:Date.now(), userId:currentUser.id, label:expForm.label, amount:parseFloat(expForm.amount), category:expForm.category, vtype:expForm.vtype, date:expForm.date, note:expForm.note||"", status:"pending"};
+    if(!expForm.label.trim()||!expForm.amount||isNaN(parseFloat(expForm.amount))) return;
+    const e={id:Date.now(),userId:user.id,label:expForm.label.trim(),amount:parseFloat(expForm.amount),cat:expForm.cat,date:expForm.date,note:expForm.note||""};
+    setExpenses(p=>[e,...p]); setShowExp(false);
+    setExpForm({label:"",amount:"",cat:"siege",date:new Date().toISOString().slice(0,10),note:""});
     setLoading(true);
-    try {
-      await FB.addExpense(exp); await loadAll();
-      setExpForm({label:"",amount:"",category:"siege",vtype:"caisse",date:new Date().toISOString().slice(0,10),note:""});
-      setShowExpForm(false); showToast("Dépense soumise ⏳","#F59E0B");
-    } catch(err) { showToast("Erreur: "+err.message,"#EF4444"); }
-    setLoading(false);
-  }
-
-  async function addRevenue() {
-    if (!revForm.label||!revForm.amount||isNaN(parseFloat(revForm.amount))) return;
-    const rev = {id:Date.now(), userId:revForm.userId, label:revForm.label, amount:parseFloat(revForm.amount), vtype:revForm.vtype, date:revForm.date, note:revForm.note||""};
-    setLoading(true);
-    try {
-      await FB.addRevenue(rev); await loadAll();
-      setRevForm({label:"",amount:"",vtype:"caisse",userId:"user1",date:new Date().toISOString().slice(0,10),note:""});
-      setShowRevForm(false); showToast("Virement enregistré ✅");
-    } catch(err) { showToast("Erreur: "+err.message,"#EF4444"); }
+    try { await FB.addExp(e); await load(); showToast("✅ Dépense ajoutée"); }
+    catch(err) { setExpenses(p=>p.filter(x=>String(x.id)!==String(e.id))); showToast("❌ "+err.message); }
     setLoading(false);
   }
 
   async function delExpense(id) {
-    setLoading(true);
-    try { await FB.delExpense(id); await loadAll(); } catch { showToast("Erreur","#EF4444"); }
-    setLoading(false);
+    setExpenses(p=>p.filter(e=>String(e.id)!==String(id)));
+    try { await FB.delExp(id); showToast("🗑️ Supprimée"); }
+    catch { await load(); showToast("❌ Erreur"); }
   }
-  async function delRevenue(id) {
+
+  async function addVirement() {
+    if(!virForm.label.trim()||!virForm.amount||isNaN(parseFloat(virForm.amount))) return;
+    const v={id:Date.now(),fromUserId:user.id,toUserId:virForm.toUserId,label:virForm.label.trim(),amount:parseFloat(virForm.amount),vtype:virForm.vtype,date:virForm.date,note:virForm.note||""};
+    setVirements(p=>[v,...p]); setShowVir(false);
+    setVirForm({label:"",amount:"",vtype:"caisse",toUserId:"u1",date:new Date().toISOString().slice(0,10),note:""});
     setLoading(true);
-    try { await FB.delRevenue(id); await loadAll(); } catch { showToast("Erreur","#EF4444"); }
+    try { await FB.addVir(v); await load(); showToast("✅ Virement enregistré"); }
+    catch(err) { setVirements(p=>p.filter(x=>String(x.id)!==String(v.id))); showToast("❌ "+err.message); }
     setLoading(false);
   }
 
-  async function saveCat() {
-    if (!editingCat.label.trim()) return;
-    const upd = editingCat.id ? categories.map(c=>c.id===editingCat.id?{...editingCat}:c) : [...categories,{...editingCat,id:"cat_"+Date.now()}];
-    setCategories(upd); await FB.setCats(upd).catch(()=>{}); setEditingCat(null);
+  async function delVirement(id) {
+    setVirements(p=>p.filter(v=>String(v.id)!==String(id)));
+    try { await FB.delVir(id); showToast("🗑️ Virement supprimé"); }
+    catch { await load(); showToast("❌ Erreur"); }
   }
 
   function exportCSV() {
-    const rows = [
-      ["Type","Sous-type","Date","Membre","Description","Catégorie","Montant (DA)","Statut"],
-      ...revenues.sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(r=>{
-        const u=getUser(r.userId); const vt=VTYPES[r.vtype]||VTYPES.caisse;
-        return ["Revenu",vt.label,r.date,u.name,r.label||"","—",r.amount,"Enregistré"];
+    const rows=[
+      ["Type","Pour","Date","Description","Montant (DA)","Note"],
+      ...virements.sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(v=>{
+        const t=getUser(v.toUserId);
+        return [v.vtype==="caisse"?"Virement Caisse":"Virement Bancaire",t.name,v.date,'"'+(v.label||"").replace(/"/g,'""')+'"',v.amount||0,v.note||""];
       }),
       ...expenses.sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(e=>{
-        const c=getCat(e.category),u=getUser(e.userId),vt=VTYPES[e.vtype]||VTYPES.caisse;
-        return ["Dépense",vt.label,e.date,u.name,e.label||"",c.label,e.amount,e.status==="paid"?"Payée":"En attente"];
+        const u=getUser(e.userId),c=getCat(e.cat);
+        return ["Dépense",u.name,e.date,'"'+(e.label||"").replace(/"/g,'""')+'"',e.amount||0,e.note||""];
       }),
     ];
     const csv="\uFEFF"+rows.map(r=>r.join(";")).join("\n");
-    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-    const url=URL.createObjectURL(blob);
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
     const a=document.createElement("a"); a.href=url; a.download="finances.csv"; a.click(); URL.revokeObjectURL(url);
   }
 
   function doLogin() {
-    if (pwInput===loginStep.password) {
-      localStorage.setItem("eq_session",JSON.stringify(loginStep));
-      setCurrentUser(loginStep); setLoginStep(null); setPwInput(""); setPwError(false);
-    } else { setPwError(true); setPwInput(""); }
+    if(pw===loginStep.pw) {
+      localStorage.setItem("dp_s",JSON.stringify(loginStep));
+      setUser(loginStep); setLoginStep(null); setPw(""); setPwErr(false);
+    } else { setPwErr(true); setPw(""); }
   }
 
-  // ── Derived ───────────────────────────────────────────────────────────────────
-  const soldes    = calcSoldes();
-  const pendingN  = expenses.filter(e=>e.status==="pending").length;
-  const myExp     = isAdmin?expenses:expenses.filter(e=>e.userId===currentUser?.id);
-
-  const visibleExp = (isAdmin
-    ? expenses
-    : expenses.filter(e=>e.userId===currentUser?.id)
-  ).filter(e =>
-    (fStatus==="all"||e.status===fStatus) &&
-    (fVtype==="all"||e.vtype===fVtype) &&
-    (fMember==="all"||e.userId===fMember||!isAdmin)
-  ).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-
-  const visibleRev = revenues
-    .filter(r=>(fVtype==="all"||r.vtype===fVtype)&&(fMember==="all"||r.userId===fMember||!isAdmin))
-    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-
-  // ── LOGIN ──────────────────────────────────────────────────────────────────────
-  if (!currentUser) return (
-    <div className="login-page">
-      <div className="login-left">
-        <div className="login-brand">💼 ExpensesPro</div>
-        <div className="login-tag">Gestion des virements Caisse & Bancaire et suivi des dépenses de votre équipe.</div>
-        {[["🏦","Virement Caisse — suivi en temps réel"],["🏛️","Virement Bancaire — solde séparé"],["💳","Dépenses liées à Caisse ou Banque"],["🔥","Synchronisé Firebase"]].map(([ic,tx])=>(
-          <div key={tx} className="login-feat"><div className="login-feat-icon">{ic}</div>{tx}</div>
-        ))}
-      </div>
-      <div className="login-right">
-        <div className="login-card slide-up">
-          {!loginStep ? (
-            <>
-              <div className="login-card-title">Connexion</div>
-              <div className="login-card-sub">Sélectionnez votre profil</div>
-              <div className="profile-grid">
-                {users.map(u=>(
-                  <button key={u.id} className={`profile-btn ${u.role==="admin"?"adm":""}`} onClick={()=>{setLoginStep(u);setPwInput("");setPwError(false);}}>
-                    <div style={{width:36,height:36,borderRadius:"50%",background:u.role==="admin"?"var(--blue-100)":"var(--gray-100)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{u.avatar}</div>
-                    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"var(--gray-900)"}}>{u.name}</div><div style={{fontSize:10,color:u.role==="admin"?"var(--blue-600)":"var(--gray-500)",marginTop:1}}>{u.role==="admin"?"Administrateur":"Membre"}</div></div>
-                    <span style={{color:"var(--gray-400)",fontSize:16}}>›</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <button onClick={()=>setLoginStep(null)} style={{background:"none",border:"none",color:"var(--gray-500)",fontSize:12,cursor:"pointer",marginBottom:16,display:"flex",alignItems:"center",gap:5}}>← Retour</button>
-              <div className="login-card-title">Bonjour, {loginStep.name} 👋</div>
-              <div className="login-card-sub">Entrez votre mot de passe</div>
-              <div className="form-group">
-                <label className="form-label">Mot de passe</label>
-                <input autoFocus type="password" className={`form-input ${pwError?"error":""}`} placeholder="••••••••"
-                  value={pwInput} onChange={e=>{setPwInput(e.target.value);setPwError(false);}} onKeyDown={e=>e.key==="Enter"&&doLogin()}/>
-                {pwError&&<div style={{color:"var(--red)",fontSize:11,marginTop:4}}>Mot de passe incorrect.</div>}
-              </div>
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={doLogin}>Se connecter →</button>
-            </>
-          )}
+  // ── LOGIN ──────────────────────────────────────────────────────────────────
+  if(!user) return (
+    <div className="login">
+      <div className="login-box">
+        <div className="login-logo">
+          <h1>💰 Dépenses Équipe</h1>
+          <p>Caisse individuelle · Suivi partagé</p>
         </div>
+        {!loginStep ? (
+          <div className="profiles">
+            {USERS.map(u=>(
+              <button key={u.id} className={"pbtn"+(u.role==="admin"?" adm":"")} onClick={()=>{setLoginStep(u);setPw("");setPwErr(false);}}>
+                <div className={"pav "+(u.role==="admin"?"a":"m")}>{u.avatar}</div>
+                <div>
+                  <div className="pname">{u.name}</div>
+                  <div className="prole">{u.role==="admin"?"Administrateur":"Membre"}</div>
+                </div>
+                <span style={{marginLeft:"auto",color:"#9CA3AF",fontSize:16}}>›</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div>
+            <button className="pw-back" onClick={()=>setLoginStep(null)}>← Retour</button>
+            <div style={{fontSize:15,fontWeight:700,color:"var(--gray-9)",marginBottom:2}}>{loginStep.avatar} {loginStep.name}</div>
+            <div style={{fontSize:12,color:"var(--gray-5)",marginBottom:14}}>Entrez votre mot de passe</div>
+            <input autoFocus type="password" className={"inp"+(pwErr?" err":"")} placeholder="••••••••"
+              value={pw} onChange={e=>{setPw(e.target.value);setPwErr(false);}}
+              onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{marginBottom:pwErr?0:12}}/>
+            {pwErr&&<div className="errmsg" style={{marginBottom:10}}>Mot de passe incorrect.</div>}
+            <button className="btn btn-blue w-full" onClick={doLogin} style={{marginTop:pwErr?10:0}}>Se connecter →</button>
+          </div>
+        )}
       </div>
     </div>
   );
 
-  // ── NAV ────────────────────────────────────────────────────────────────────────
-  const adminNav = [
-    {id:"dashboard", icon:"📊", label:"Tableau de bord"},
-    {id:"revenues",  icon:"💰", label:"Virements"},
-    {id:"expenses",  icon:"💳", label:"Dépenses", badge:pendingN},
-    {id:"cats",      icon:"🏷️", label:"Catégories"},
-  ];
-  const memberNav = [
-    {id:"dashboard", icon:"📊", label:"Mon tableau de bord"},
-    {id:"expenses",  icon:"💳", label:"Mes dépenses"},
-  ];
-  const nav = isAdmin ? adminNav : memberNav;
-
+  // ── MAIN APP ───────────────────────────────────────────────────────────────
   return (
-    <>
-      {toast && <div className="toast slide-up" style={{background:toast.color}}>{toast.msg}</div>}
-      {loading && <div className="progress-bar"/>}
+    <div className="app">
+      {toast && <div className="toast sup">{toast}</div>}
+      {loading && <div className="loadbar"/>}
 
-      {/* SIDEBAR */}
-      <nav className="sidebar">
-        <div className="sb-logo"><h1>💼 ExpensesPro</h1><p>Caisse & Bancaire</p></div>
-        <div className="sb-nav">
-          {nav.map(item=>(
-            <div key={item.id} className={`nav-item ${view===item.id?"active":""}`} onClick={()=>setView(item.id)}>
-              <span style={{fontSize:15,width:18,textAlign:"center"}}>{item.icon}</span>{item.label}
-              {item.badge>0&&<span className="nav-badge">{item.badge}</span>}
+      {/* TOPBAR */}
+      <div className="topbar">
+        <div className="tbi">
+          <div className="tb-logo">💰 Dépenses Équipe</div>
+          <div className="tb-right">
+            {isAdmin && <button className="btn btn-green btn-sm" onClick={()=>setShowVir(true)}>💸 Virement</button>}
+            <button className="btn btn-blue btn-sm" onClick={()=>setShowExp(true)}>+ Dépense</button>
+            {isAdmin && <button className="btn btn-ghost btn-sm" onClick={exportCSV}>⬇ CSV</button>}
+            <div style={{textAlign:"right"}}>
+              <div className="tb-name">{user.avatar} {user.name}</div>
+              <div className="tb-role">{isAdmin?"Admin":"Membre"}</div>
             </div>
-          ))}
-          {isAdmin&&<>
-            <div className="sb-section">Actions</div>
-            <div className="nav-item" onClick={exportCSV}><span style={{fontSize:15,width:18,textAlign:"center"}}>⬇️</span>Export CSV</div>
-          </>}
+            <button className="btn btn-ghost btn-sm btn-icon" title="Déconnexion"
+              onClick={()=>{localStorage.removeItem("dp_s");setUser(null);}}>⏏</button>
+          </div>
         </div>
-        <div className="sb-footer">
-          <div className="user-chip"><div className="ua">{currentUser.avatar}</div><div><div className="un">{currentUser.name}</div><div className="ur">{isAdmin?"Admin":"Membre"}</div></div></div>
-          <button className="logout-btn" onClick={()=>{localStorage.removeItem("eq_session");setCurrentUser(null);}}>⏏ Déconnexion</button>
-        </div>
-      </nav>
+      </div>
 
-      {/* MAIN */}
-      <main className="main">
+      {/* MAIN LAYOUT: gauche + droite */}
+      <div className="main-layout fade">
 
-        {/* ── DASHBOARD ── */}
-        {view==="dashboard" && (
-          <div className="fade-in">
-            <div className="ph">
-              <div><div className="pt">{isAdmin?"Vue d'ensemble":"Mon tableau de bord"}</div><div className="ps">{new Date().toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div></div>
-              <div style={{display:"flex",gap:10}}>
-                {isAdmin && <button className="btn btn-caisse" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"caisse"}));}}>🏦 Virement Caisse</button>}
-                {isAdmin && <button className="btn btn-banque" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"banque"}));}}>🏛️ Virement Bancaire</button>}
-                {!isAdmin && <button className="btn btn-primary" onClick={()=>setShowExpForm(true)}>+ Nouvelle dépense</button>}
+        {/* GAUCHE */}
+        <div className="layout-left">
+          {isAdmin ? (
+            /* Admin: cartes membres */
+            <>
+              <div style={{fontSize:11,fontWeight:700,color:"var(--gray-5)",textTransform:"uppercase",letterSpacing:".07em",marginBottom:2}}>
+                Caisse par membre
+                {selMember && <span style={{color:"var(--blue)",cursor:"pointer",fontWeight:500,marginLeft:8}} onClick={()=>setSelMember(null)}>← Tout</span>}
               </div>
-            </div>
-
-            {/* Solde cards */}
-            <div className="solde-grid">
-              {/* Caisse */}
-              <div className="solde-card caisse">
-                <div className="sc-icon caisse">🏦</div>
-                <div className="sc-label">Solde Caisse</div>
-                <div className="sc-value" style={{color:soldes.caisse.solde>=0?"var(--caisse)":"var(--red)"}}>{fmtS(soldes.caisse.solde)}</div>
-                <div className="sc-sub">{soldes.caisse.pending>0?`⏳ ${fmt(soldes.caisse.pending)} en attente`:""}</div>
-                <div className="sc-breakdown">
-                  <div className="sc-br-item"><div className="sc-br-label">Virements</div><div className="sc-br-val" style={{color:"var(--green)"}}>{fmt(soldes.caisse.entrees)}</div></div>
-                  <div className="sc-br-item"><div className="sc-br-label">Dépenses payées</div><div className="sc-br-val" style={{color:"var(--red)"}}>{fmt(soldes.caisse.sorties)}</div></div>
-                </div>
-              </div>
-              {/* Banque */}
-              <div className="solde-card banque">
-                <div className="sc-icon banque">🏛️</div>
-                <div className="sc-label">Solde Bancaire</div>
-                <div className="sc-value" style={{color:soldes.banque.solde>=0?"var(--banque)":"var(--red)"}}>{fmtS(soldes.banque.solde)}</div>
-                <div className="sc-sub">{soldes.banque.pending>0?`⏳ ${fmt(soldes.banque.pending)} en attente`:""}</div>
-                <div className="sc-breakdown">
-                  <div className="sc-br-item"><div className="sc-br-label">Virements</div><div className="sc-br-val" style={{color:"var(--green)"}}>{fmt(soldes.banque.entrees)}</div></div>
-                  <div className="sc-br-item"><div className="sc-br-label">Dépenses payées</div><div className="sc-br-val" style={{color:"var(--red)"}}>{fmt(soldes.banque.sorties)}</div></div>
-                </div>
-              </div>
-              {/* Total */}
-              <div className="solde-card total">
-                <div className="sc-icon total">📊</div>
-                <div className="sc-label">Solde Total</div>
-                <div className="sc-value" style={{color:(soldes.caisse.solde+soldes.banque.solde)>=0?"var(--blue-600)":"var(--red)"}}>
-                  {fmtS(soldes.caisse.solde+soldes.banque.solde)}
-                </div>
-                <div className="sc-sub">{pendingN} dépense(s) en attente</div>
-                <div className="sc-breakdown">
-                  <div className="sc-br-item"><div className="sc-br-label">Total virements</div><div className="sc-br-val" style={{color:"var(--green)"}}>{fmt(soldes.caisse.entrees+soldes.banque.entrees)}</div></div>
-                  <div className="sc-br-item"><div className="sc-br-label">Total dépenses</div><div className="sc-br-val" style={{color:"var(--red)"}}>{fmt(soldes.caisse.sorties+soldes.banque.sorties)}</div></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent tables */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
-              <div className="card">
-                <div className="card-hdr"><span className="card-title">Dernières dépenses</span><button className="btn btn-ghost btn-sm" onClick={()=>setView("expenses")}>Voir tout</button></div>
-                <table><tbody>
-                  {myExp.slice(0,6).map(exp=>{
-                    const c=getCat(exp.category); const vt=VTYPES[exp.vtype]||VTYPES.caisse;
-                    return (<tr key={exp.id}>
-                      <td><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:17}}>{c.icon}</span><div><div style={{fontWeight:600,fontSize:12}}>{exp.label}</div><div style={{fontSize:10,color:"var(--gray-400)"}}>{isAdmin&&getUser(exp.userId).name+" · "}{new Date(exp.date).toLocaleDateString("fr-FR")}</div></div></div></td>
-                      <td><span className={`badge ${vt.cls}`}>{vt.icon}</span></td>
-                      <td style={{fontWeight:700,color:c.color,fontSize:12,whiteSpace:"nowrap"}}>{fmt(exp.amount)}</td>
-                      <td><span className={`badge ${exp.status==="paid"?"paid":"pending"}`}>{exp.status==="paid"?"✅ Payée":"⏳ Attente"}</span></td>
-                    </tr>);
-                  })}
-                  {myExp.length===0&&<tr><td colSpan="4" style={{textAlign:"center",color:"var(--gray-400)",padding:20,fontSize:12}}>Aucune dépense</td></tr>}
-                </tbody></table>
-              </div>
-              <div className="card">
-                <div className="card-hdr"><span className="card-title">Derniers virements</span>{isAdmin&&<button className="btn btn-ghost btn-sm" onClick={()=>setView("revenues")}>Voir tout</button>}</div>
-                <table><tbody>
-                  {(isAdmin?revenues:revenues.filter(r=>r.userId===currentUser?.id)).slice(0,6).map(rev=>{
-                    const vt=VTYPES[rev.vtype]||VTYPES.caisse; const u=getUser(rev.userId);
-                    return (<tr key={rev.id}>
-                      <td><div><div style={{fontWeight:600,fontSize:12}}>{rev.label}</div><div style={{fontSize:10,color:"var(--gray-400)"}}>{isAdmin&&u.name+" · "}{new Date(rev.date).toLocaleDateString("fr-FR")}</div></div></td>
-                      <td><span className={`badge ${vt.cls}`}>{vt.icon} {vt.label}</span></td>
-                      <td style={{fontWeight:700,color:"var(--green)",fontSize:12,whiteSpace:"nowrap"}}>{fmt(rev.amount)}</td>
-                    </tr>);
-                  })}
-                  {revenues.length===0&&<tr><td colSpan="3" style={{textAlign:"center",color:"var(--gray-400)",padding:20,fontSize:12}}>Aucun virement</td></tr>}
-                </tbody></table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── VIREMENTS (admin) ── */}
-        {view==="revenues" && isAdmin && (
-          <div className="fade-in">
-            <div className="ph">
-              <div><div className="pt">Virements</div><div className="ps">{revenues.length} enregistrement(s)</div></div>
-              <div style={{display:"flex",gap:10}}>
-                <button className="btn btn-caisse" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"caisse"}));}}>🏦 + Caisse</button>
-                <button className="btn btn-banque" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"banque"}));}}>🏛️ + Bancaire</button>
-              </div>
-            </div>
-            <div className="filters">
-              {["all","caisse","banque"].map(v=>(
-                <button key={v} className={`filter-btn ${fVtype===v?"active":""}`} onClick={()=>setFVtype(v)}>
-                  {v==="all"?"Tous":VTYPES[v].icon+" "+VTYPES[v].label}
-                </button>
-              ))}
-              <select className="filter-select" value={fMember} onChange={e=>setFMember(e.target.value)}>
-                <option value="all">Tous les membres</option>
-                {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
-            <div className="card">
-              <table>
-                <thead><tr><th>Description</th><th>Type</th><th>Membre</th><th>Date</th><th>Montant</th><th></th></tr></thead>
-                <tbody>
-                  {visibleRev.length===0&&<tr><td colSpan="6" style={{textAlign:"center",color:"var(--gray-400)",padding:28}}>Aucun virement</td></tr>}
-                  {visibleRev.map(rev=>{
-                    const vt=VTYPES[rev.vtype]||VTYPES.caisse; const u=getUser(rev.userId);
-                    return (<tr key={rev.id}>
-                      <td><div style={{fontWeight:600}}>{rev.label}</div>{rev.note&&<div style={{fontSize:11,color:"var(--gray-400)"}}>{rev.note}</div>}</td>
-                      <td><span className={`badge ${vt.cls}`}>{vt.icon} {vt.label}</span></td>
-                      <td><div style={{display:"flex",alignItems:"center",gap:6}}>{u.avatar} {u.name}</div></td>
-                      <td style={{fontSize:12}}>{new Date(rev.date).toLocaleDateString("fr-FR")}</td>
-                      <td style={{fontWeight:700,color:"var(--green)"}}>{fmt(rev.amount)}</td>
-                      <td><div className="row-acts"><button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delRevenue(rev.id)}>🗑️</button></div></td>
-                    </tr>);
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ── DÉPENSES ── */}
-        {view==="expenses" && (
-          <div className="fade-in">
-            <div className="ph">
-              <div><div className="pt">{isAdmin?"Dépenses":"Mes dépenses"}</div><div className="ps">{visibleExp.length} dépense(s)</div></div>
-              {!isAdmin && <button className="btn btn-primary" onClick={()=>setShowExpForm(true)}>+ Nouvelle dépense</button>}
-            </div>
-            <div className="filters">
-              <button className={`filter-btn ${fStatus==="all"?"active":""}`} onClick={()=>setFStatus("all")}>Toutes</button>
-              <button className={`filter-btn ${fStatus==="pending"?"active":""}`} onClick={()=>setFStatus("pending")}>⏳ En attente</button>
-              <button className={`filter-btn ${fStatus==="paid"?"active":""}`} onClick={()=>setFStatus("paid")}>✅ Payées</button>
-              <button className={`filter-btn ${fVtype==="caisse"?"active":""}`} onClick={()=>setFVtype(fVtype==="caisse"?"all":"caisse")}>🏦 Caisse</button>
-              <button className={`filter-btn ${fVtype==="banque"?"active":""}`} onClick={()=>setFVtype(fVtype==="banque"?"all":"banque")}>🏛️ Bancaire</button>
-              {isAdmin && <select className="filter-select" value={fMember} onChange={e=>setFMember(e.target.value)}>
-                <option value="all">Tous les membres</option>
-                {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>}
-            </div>
-            <div className="card">
-              <table>
-                <thead><tr><th>Description</th>{isAdmin&&<th>Membre</th>}<th>Catégorie</th><th>Type</th><th>Date</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
-                <tbody>
-                  {visibleExp.length===0&&<tr><td colSpan="8" style={{textAlign:"center",color:"var(--gray-400)",padding:28}}>Aucune dépense</td></tr>}
-                  {visibleExp.map(exp=>{
-                    const c=getCat(exp.category); const vt=VTYPES[exp.vtype]||VTYPES.caisse; const u=getUser(exp.userId);
-                    return (<tr key={exp.id}>
-                      <td><div style={{fontWeight:600}}>{exp.label}</div>{exp.note&&<div style={{fontSize:11,color:"var(--gray-400)"}}>{exp.note}</div>}</td>
-                      {isAdmin&&<td><div style={{display:"flex",alignItems:"center",gap:6,fontSize:12}}>{u.avatar} {u.name}</div></td>}
-                      <td><div style={{display:"flex",alignItems:"center",gap:5,fontSize:12}}><span style={{width:7,height:7,borderRadius:"50%",background:c.color,display:"inline-block"}}/>{c.icon} {c.label}</div></td>
-                      <td><span className={`badge ${vt.cls}`}>{vt.icon} {vt.label}</span></td>
-                      <td style={{fontSize:12}}>{new Date(exp.date).toLocaleDateString("fr-FR")}</td>
-                      <td style={{fontWeight:700,color:c.color,fontSize:13}}>{fmt(exp.amount)}</td>
-                      <td><span className={`badge ${exp.status==="paid"?"paid":"pending"}`}>{exp.status==="paid"?"✅ Payée":"⏳ En attente"}</span></td>
-                      <td><div className="row-acts">
-                        {isAdmin&&exp.status==="pending"&&<button className="btn btn-pay" onClick={()=>markPaid(exp.id)} disabled={loading}>✓ Payer</button>}
-                        {!isAdmin&&exp.status==="pending"&&<button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delExpense(exp.id)} disabled={loading}>🗑️</button>}
-                      </div></td>
-                    </tr>);
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ── CATÉGORIES (admin) ── */}
-        {view==="cats" && isAdmin && (
-          <div className="fade-in">
-            <div className="ph">
-              <div><div className="pt">Catégories de dépenses</div></div>
-              <button className="btn btn-primary" onClick={()=>{setEditingCat({id:null,label:"",icon:"📦",color:COLORS[0]});setIconOpen(false);}}>+ Nouvelle</button>
-            </div>
-            <div className="card">
-              <table>
-                <thead><tr><th>Catégorie</th><th>Couleur</th><th>Dépenses</th><th></th></tr></thead>
-                <tbody>
-                  {categories.map(c=>(
-                    <tr key={c.id}>
-                      <td><div style={{display:"flex",alignItems:"center",gap:9}}><span style={{fontSize:19}}>{c.icon}</span><span style={{fontWeight:600}}>{c.label}</span></div></td>
-                      <td><div style={{width:14,height:14,borderRadius:"50%",background:c.color}}/></td>
-                      <td style={{fontSize:12,color:"var(--gray-500)"}}>{expenses.filter(e=>e.category===c.id).length}</td>
-                      <td><div className="row-acts">
-                        <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>{setEditingCat({...c});setIconOpen(false);}}>✏️</button>
-                        {c.id!=="other"&&<button className="btn btn-ghost btn-sm btn-icon" onClick={async()=>{const u=categories.filter(x=>x.id!==c.id);setCategories(u);await FB.setCats(u).catch(()=>{});}}>🗑️</button>}
-                      </div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* ── AJOUTER DÉPENSE ── */}
-      {showExpForm && (
-        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowExpForm(false)}>
-          <div className="modal pop">
-            <div className="modal-title">💳 Nouvelle dépense</div>
-            <div className="form-group">
-              <label className="form-label">Type de paiement</label>
-              <div className="type-selector">
-                {Object.entries(VTYPES).map(([k,vt])=>(
-                  <div key={k} className={`type-btn ${k} ${expForm.vtype===k?"selected":""}`} onClick={()=>setExpForm(f=>({...f,vtype:k}))}>
-                    <div className="type-icon">{vt.icon}</div>
-                    <div className="type-label">{vt.label}</div>
-                    <div className="type-sub">{k==="caisse"?"Paiement en espèces":"Virement bancaire"}</div>
+              {USERS.filter(u=>u.role==="member").map((u,idx,arr)=>{
+                const s = calcSolde(u.id,expenses,virements);
+                const showSep = idx>0 && arr[idx-1].name==="Tariq" && u.name==="Amine";
+                return (
+                  <React.Fragment key={u.id}>
+                    {showSep && <div className="sep"/>}
+                    <div className={"mc"+(selMember===u.id?" sel":"")} onClick={()=>setSelMember(selMember===u.id?null:u.id)}>
+                      <div className="mc-head">
+                        <div className="mc-av">{u.avatar}</div>
+                        <div>
+                          <div className="mc-name">{u.name}</div>
+                          <div className="mc-sub">{expenses.filter(e=>e.userId===u.id).length} dépense(s)</div>
+                        </div>
+                        <div style={{marginLeft:"auto",textAlign:"right"}}>
+                          <div style={{fontSize:14,fontWeight:800,color:s.solde>=0?"var(--green)":"var(--red)"}}>{fmtS(s.solde)}</div>
+                          <div style={{fontSize:10,color:"var(--gray-5)"}}>Solde</div>
+                        </div>
+                      </div>
+                      <div className="mc-body">
+                        <div className="mc-stat">
+                          <div className="mc-lbl">🏦 Caisse</div>
+                          <div className="mc-val" style={{color:"var(--purple)"}}>{fmt(s.virC)}</div>
+                        </div>
+                        <div className="mc-stat">
+                          <div className="mc-lbl">🏛️ Banque</div>
+                          <div className="mc-val" style={{color:"var(--cyan)"}}>{fmt(s.virB)}</div>
+                        </div>
+                        <div className="mc-stat">
+                          <div className="mc-lbl">💳 Dépenses</div>
+                          <div className="mc-val" style={{color:"var(--red)"}}>{fmt(s.dep)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </>
+          ) : (
+            /* Membre: cartes solde */
+            (() => {
+              const s = calcSolde(user.id, expenses, virements);
+              return (
+                <>
+                  <div className="sc caisse">
+                    <div className="sc-lbl">🏦 Virement Caisse</div>
+                    <div className="sc-val" style={{color:"var(--purple)"}}>{fmt(s.virC)}</div>
                   </div>
+                  <div className="sc banque">
+                    <div className="sc-lbl">🏛️ Virement Bancaire</div>
+                    <div className="sc-val" style={{color:"var(--cyan)"}}>{fmt(s.virB)}</div>
+                  </div>
+                  <div className="sc global">
+                    <div className="sc-lbl">📊 Mon Solde</div>
+                    <div className="sc-val" style={{color:s.solde>=0?"var(--green)":"var(--red)"}}>{fmtS(s.solde)}</div>
+                    <div className="sc-rows">
+                      <div className="sc-row">
+                        <div className="sc-row-lbl">Total reçu</div>
+                        <div className="sc-row-val" style={{color:"var(--green)"}}>{fmt(s.virC+s.virB)}</div>
+                      </div>
+                      <div className="sc-row">
+                        <div className="sc-row-lbl">Dépensé</div>
+                        <div className="sc-row-val" style={{color:"var(--red)"}}>{fmt(s.dep)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()
+          )}
+        </div>
+
+        {/* DROITE: camembert */}
+        <div className="layout-right">
+          <PieChart
+            expenses={isAdmin ? (selMember ? expenses.filter(e=>e.userId===selMember) : expenses) : expenses.filter(e=>e.userId===user?.id)}
+            title={"📊 "+(isAdmin?(selMember?getUser(selMember).name+" — ":"Équipe — "):"Mes ")+"dépenses par catégorie"}
+          />
+        </div>
+      </div>
+
+      {/* TABS */}
+      <div className="tab-bar">
+        <button className={"tab"+(tab==="depenses"?" on":"")} onClick={()=>setTab("depenses")}>
+          💳 Dépenses ({filteredExp.length})
+        </button>
+        <button className={"tab"+(tab==="virements"?" on":"")} onClick={()=>setTab("virements")}>
+          💸 Virements ({myVir.length})
+        </button>
+      </div>
+
+      {/* DÉPENSES */}
+      {tab==="depenses" && (
+        <div className="fade">
+          <div className="toolbar">
+            <button className={"chip"+(filterCat==="all"?" on":"")} onClick={()=>setFilterCat("all")}>Toutes</button>
+            {CATS.filter(c=>myExp.some(e=>e.cat===c.id)).map(c=>(
+              <button key={c.id} className={"chip"+(filterCat===c.id?" on":"")}
+                style={filterCat===c.id?{background:c.color,borderColor:c.color}:{}}
+                onClick={()=>setFilterCat(filterCat===c.id?"all":c.id)}>
+                {c.icon} {c.label}
+              </button>
+            ))}
+          </div>
+          <div className="list">
+            {grouped.length===0 ? (
+              <div className="empty"><div style={{fontSize:32,marginBottom:8}}>📭</div><div style={{fontSize:13}}>Aucune dépense</div></div>
+            ) : grouped.map(([date,items])=>(
+              <div key={date}>
+                <div className="date-sep">{fmtDate(date)}</div>
+                {items.map(exp=>{
+                  const c=getCat(exp.cat), u=getUser(exp.userId);
+                  const canDel = isAdmin||exp.userId===user.id;
+                  return (
+                    <div key={exp.id} className="exp-card" style={{borderLeftColor:c.color}}>
+                      <div className="exp-icon" style={{background:c.color+"18"}}>{c.icon}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div className="exp-name">{exp.label}</div>
+                        <div className="exp-meta">
+                          <span>{u.avatar} {u.name}</span>
+                          <span className="dot"/>
+                          <span>{c.label}</span>
+                          {exp.note&&<><span className="dot"/><span style={{fontStyle:"italic"}}>{exp.note}</span></>}
+                        </div>
+                      </div>
+                      <div className="exp-amt" style={{color:c.color}}>{fmt(exp.amount)}</div>
+                      {canDel&&(
+                        <div className="exp-acts">
+                          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delExpense(exp.id)}>🗑️</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* VIREMENTS */}
+      {tab==="virements" && (
+        <div className="fade">
+          <div className="list">
+            {myVir.length===0 ? (
+              <div className="empty">
+                <div style={{fontSize:32,marginBottom:8}}>💸</div>
+                <div style={{fontSize:13}}>Aucun virement</div>
+                {isAdmin&&<button className="btn btn-green" style={{marginTop:14}} onClick={()=>setShowVir(true)}>+ Virement</button>}
+              </div>
+            ) : [...myVir].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(vir=>{
+              const isC=vir.vtype==="caisse", to=getUser(vir.toUserId);
+              const canDel=isAdmin;
+              return (
+                <div key={vir.id} className={"vir-card "+vir.vtype}>
+                  <div style={{width:36,height:36,borderRadius:9,background:isC?"var(--purple-l)":"var(--cyan-l)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+                    {isC?"🏦":"🏛️"}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"var(--gray-9)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{vir.label}</div>
+                    <div style={{fontSize:11,color:"var(--gray-5)",marginTop:2,display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                      <span className={"badge "+vir.vtype}>{isC?"🏦 Caisse":"🏛️ Bancaire"}</span>
+                      <span className="dot"/>
+                      <span>→ {to.avatar} {to.name}</span>
+                      <span className="dot"/>
+                      <span>{new Date(vir.date+"T00:00:00").toLocaleDateString("fr-FR")}</span>
+                      {vir.note&&<><span className="dot"/><span style={{fontStyle:"italic"}}>{vir.note}</span></>}
+                    </div>
+                  </div>
+                  <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:14,fontWeight:800,color:isC?"var(--purple)":"var(--cyan)",whiteSpace:"nowrap"}}>{fmt(vir.amount)}</div>
+                  {canDel&&(
+                    <div className="exp-acts" style={{opacity:1}}>
+                      <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delVirement(vir.id)}>🗑️</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* FORM DÉPENSE */}
+      {showExp && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowExp(false)}>
+          <div className="modal">
+            <div className="modal-title">+ Nouvelle dépense</div>
+            <div className="fg">
+              <label className="fl">Catégorie</label>
+              <div className="cat-pick">
+                {CATS.map(c=>(
+                  <button key={c.id} className={"cpill"+(expForm.cat===c.id?" on":"")}
+                    style={expForm.cat===c.id?{borderColor:c.color,background:c.color+"15",color:c.color}:{}}
+                    onClick={()=>setExpForm(f=>({...f,cat:c.id}))}>
+                    {c.icon} {c.label}
+                  </button>
                 ))}
               </div>
             </div>
-            <div className="form-group"><label className="form-label">Description</label>
-              <input className="form-input" placeholder="Ex: Carburant, Repas..." value={expForm.label} onChange={e=>setExpForm(f=>({...f,label:e.target.value}))}/>
+            <div className="fg">
+              <label className="fl">Description</label>
+              <input className="inp" placeholder="Ex: Carburant, Repas..." value={expForm.label} onChange={e=>setExpForm(f=>({...f,label:e.target.value}))} autoFocus/>
             </div>
             <div className="form-row">
-              <div className="form-group"><label className="form-label">Montant (DA)</label>
-                <input className="form-input" type="number" placeholder="0" value={expForm.amount} onChange={e=>setExpForm(f=>({...f,amount:e.target.value}))}/>
+              <div className="fg">
+                <label className="fl">Montant (DA)</label>
+                <input className="inp" type="number" placeholder="0" value={expForm.amount} onChange={e=>setExpForm(f=>({...f,amount:e.target.value}))}/>
               </div>
-              <div className="form-group"><label className="form-label">Date</label>
-                <input className="form-input" type="date" value={expForm.date} onChange={e=>setExpForm(f=>({...f,date:e.target.value}))}/>
+              <div className="fg">
+                <label className="fl">Date</label>
+                <input className="inp" type="date" value={expForm.date} onChange={e=>setExpForm(f=>({...f,date:e.target.value}))}/>
               </div>
             </div>
-            <div className="form-group"><label className="form-label">Catégorie</label>
-              <select className="form-input" value={expForm.category} onChange={e=>setExpForm(f=>({...f,category:e.target.value}))}>
-                {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-              </select>
+            <div className="fg">
+              <label className="fl">Note (optionnel)</label>
+              <input className="inp" placeholder="Précisions..." value={expForm.note} onChange={e=>setExpForm(f=>({...f,note:e.target.value}))}/>
             </div>
-            <div className="form-group"><label className="form-label">Note (optionnel)</label>
-              <input className="form-input" placeholder="Précisions..." value={expForm.note} onChange={e=>setExpForm(f=>({...f,note:e.target.value}))}/>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={()=>setShowExpForm(false)}>Annuler</button>
-              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={addExpense} disabled={loading}>{loading?"Envoi...":"Soumettre →"}</button>
+            <div className="mf">
+              <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setShowExp(false)}>Annuler</button>
+              <button className="btn btn-green" style={{flex:2}} onClick={addExpense} disabled={loading}>{loading?"Envoi...":"Ajouter ✓"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── AJOUTER VIREMENT (admin) ── */}
-      {showRevForm && isAdmin && (
-        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowRevForm(false)}>
-          <div className="modal pop">
-            <div className="modal-title">💰 Enregistrer un virement</div>
-            <div className="form-group">
-              <label className="form-label">Type de virement</label>
-              <div className="type-selector">
-                {Object.entries(VTYPES).map(([k,vt])=>(
-                  <div key={k} className={`type-btn ${k} ${revForm.vtype===k?"selected":""}`} onClick={()=>setRevForm(f=>({...f,vtype:k}))}>
-                    <div className="type-icon">{vt.icon}</div>
-                    <div className="type-label">{vt.label}</div>
-                    <div className="type-sub">{k==="caisse"?"Alimenter la caisse":"Alimenter le compte banque"}</div>
+      {/* FORM VIREMENT (admin) */}
+      {showVir && isAdmin && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowVir(false)}>
+          <div className="modal">
+            <div className="modal-title">💸 Nouveau virement</div>
+            <div className="fg">
+              <label className="fl">Type de virement</label>
+              <div className="type-row">
+                {[["caisse","🏦","Virement Caisse"],["banque","🏛️","Virement Bancaire"]].map(([k,ic,lb])=>(
+                  <div key={k} className={"tbtn "+k+(virForm.vtype===k?" on":"")} onClick={()=>setVirForm(f=>({...f,vtype:k}))}>
+                    <div style={{fontSize:20,marginBottom:3}}>{ic}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"var(--gray-9)"}}>{lb}</div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="form-group"><label className="form-label">Membre concerné</label>
-              <select className="form-input" value={revForm.userId} onChange={e=>setRevForm(f=>({...f,userId:e.target.value}))}>
-                {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.avatar} {u.name}</option>)}
+            <div className="fg">
+              <label className="fl">Pour le membre</label>
+              <select className="inp" value={virForm.toUserId} onChange={e=>setVirForm(f=>({...f,toUserId:e.target.value}))}>
+                {USERS.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.avatar} {u.name}</option>)}
               </select>
             </div>
-            <div className="form-group"><label className="form-label">Description</label>
-              <input className="form-input" placeholder="Ex: Dotation Caisse Mars, Virement salaire..." value={revForm.label} onChange={e=>setRevForm(f=>({...f,label:e.target.value}))}/>
+            <div className="fg">
+              <label className="fl">Description</label>
+              <input className="inp" placeholder="Ex: Dotation caisse Mars..." value={virForm.label} onChange={e=>setVirForm(f=>({...f,label:e.target.value}))} autoFocus/>
             </div>
             <div className="form-row">
-              <div className="form-group"><label className="form-label">Montant (DA)</label>
-                <input className="form-input" type="number" placeholder="0" value={revForm.amount} onChange={e=>setRevForm(f=>({...f,amount:e.target.value}))}/>
+              <div className="fg">
+                <label className="fl">Montant (DA)</label>
+                <input className="inp" type="number" placeholder="0" value={virForm.amount} onChange={e=>setVirForm(f=>({...f,amount:e.target.value}))}/>
               </div>
-              <div className="form-group"><label className="form-label">Date</label>
-                <input className="form-input" type="date" value={revForm.date} onChange={e=>setRevForm(f=>({...f,date:e.target.value}))}/>
+              <div className="fg">
+                <label className="fl">Date</label>
+                <input className="inp" type="date" value={virForm.date} onChange={e=>setVirForm(f=>({...f,date:e.target.value}))}/>
               </div>
             </div>
-            <div className="form-group"><label className="form-label">Note (optionnel)</label>
-              <input className="form-input" placeholder="Précisions..." value={revForm.note} onChange={e=>setRevForm(f=>({...f,note:e.target.value}))}/>
+            <div className="fg">
+              <label className="fl">Note (optionnel)</label>
+              <input className="inp" placeholder="Précisions..." value={virForm.note} onChange={e=>setVirForm(f=>({...f,note:e.target.value}))}/>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={()=>setShowRevForm(false)}>Annuler</button>
-              <button className={`btn ${revForm.vtype==="caisse"?"btn-caisse":"btn-banque"}`} style={{flex:1,justifyContent:"center"}} onClick={addRevenue} disabled={loading}>
-                {loading?"Envoi...":VTYPES[revForm.vtype].icon+" Enregistrer"}
+            <div className="mf">
+              <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setShowVir(false)}>Annuler</button>
+              <button className={"btn "+(virForm.vtype==="caisse"?"btn-blue":"btn-green")} style={{flex:2}} onClick={addVirement} disabled={loading}>
+                {loading?"Envoi...":(virForm.vtype==="caisse"?"🏦":"🏛️")+" Enregistrer"}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* ── CATÉGORIE EDITOR ── */}
-      {editingCat && (
-        <div className="overlay" onClick={e=>e.target===e.currentTarget&&(setEditingCat(null),setIconOpen(false))}>
-          <div className="modal pop">
-            <div className="modal-title">{editingCat.id?"Modifier":"Nouvelle catégorie"}</div>
-            <div className="form-group"><label className="form-label">Icône</label>
-              <button onClick={()=>setIconOpen(o=>!o)} style={{background:"var(--gray-50)",border:"1.5px solid var(--gray-200)",borderRadius:8,padding:"7px 12px",fontSize:19,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                {editingCat.icon} <span style={{fontSize:11,color:"var(--gray-400)"}}>Choisir ▾</span>
-              </button>
-              {iconOpen&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:7,background:"var(--gray-50)",borderRadius:8,padding:8,maxHeight:130,overflowY:"auto"}}>
-                {ICONS.map(ic=><button key={ic} onClick={()=>{setEditingCat(e=>({...e,icon:ic}));setIconOpen(false);}} style={{fontSize:19,padding:"5px 7px",borderRadius:6,cursor:"pointer",background:editingCat.icon===ic?"var(--blue-100)":"none",border:"none"}}>{ic}</button>)}
-              </div>}
-            </div>
-            <div className="form-group"><label className="form-label">Nom</label>
-              <input className="form-input" placeholder="Nom..." value={editingCat.label} onChange={e=>setEditingCat(ec=>({...ec,label:e.target.value}))}/>
-            </div>
-            <div className="form-group"><label className="form-label">Couleur</label>
-              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                {COLORS.map(col=><div key={col} onClick={()=>setEditingCat(ec=>({...ec,color:col}))} style={{width:24,height:24,borderRadius:"50%",background:col,cursor:"pointer",border:editingCat.color===col?"3px solid var(--gray-900)":"2px solid transparent",transition:"all .15s"}}/>)}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={()=>{setEditingCat(null);setIconOpen(false);}}>Annuler</button>
-              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={saveCat}>{editingCat.id?"Enregistrer":"Créer"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }
 
