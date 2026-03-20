@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ExpensesPro · Gestion des Dépenses</title>
+  <title>ExpensesPro · Caisse & Banque</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <script>
-    const firebaseConfig = {
+    firebase.initializeApp({
       apiKey: "AIzaSyDOG7S4hWibxGwVBe59ybUmGuJ0r-tnZxI",
       authDomain: "gestion-depenses-6bfcc.firebaseapp.com",
       databaseURL: "https://gestion-depenses-6bfcc-default-rtdb.europe-west1.firebasedatabase.app",
@@ -19,221 +19,215 @@
       storageBucket: "gestion-depenses-6bfcc.firebasestorage.app",
       messagingSenderId: "474872789938",
       appId: "1:474872789938:web:d3821e317551b8956542ab"
-    };
-    firebase.initializeApp(firebaseConfig);
+    });
     const db = firebase.database();
+
+    const toArr = v => {
+      if (!v) return [];
+      if (Array.isArray(v)) return v.filter(e => e && e.id);
+      return Object.entries(v).filter(([,e]) => e).map(([k,e]) => ({...e, id: e.id||k}));
+    };
+
+    const FB = {
+      getExpenses:  ()  => db.ref("eq_expenses").once("value").then(s => toArr(s.val())),
+      getRevenues:  ()  => db.ref("eq_revenues").once("value").then(s => toArr(s.val())),
+      getCats:      ()  => db.ref("eq_cats").once("value").then(s => s.exists() ? toArr(s.val()) : null),
+      setCats:      v   => db.ref("eq_cats").set(v),
+      addExpense:   exp => db.ref("eq_expenses/"+String(exp.id)).set(exp),
+      markPaid:     id  => db.ref("eq_expenses/"+String(id)).update({status:"paid"}),
+      delExpense:   id  => db.ref("eq_expenses/"+String(id)).remove(),
+      addRevenue:   rev => db.ref("eq_revenues/"+String(rev.id)).set(rev),
+      delRevenue:   id  => db.ref("eq_revenues/"+String(id)).remove(),
+    };
   </script>
   <style>
-    :root {
-      --blue-900: #0F1F3D; --blue-800: #1A3160; --blue-700: #1E4D8C;
-      --blue-600: #1D6AE5; --blue-500: #3B82F6; --blue-400: #60A5FA;
-      --blue-100: #DBEAFE; --blue-50: #EFF6FF;
-      --gray-900: #0F172A; --gray-800: #1E293B; --gray-700: #334155;
-      --gray-600: #475569; --gray-500: #64748B; --gray-400: #94A3B8;
-      --gray-300: #CBD5E1; --gray-200: #E2E8F0; --gray-100: #F1F5F9; --gray-50: #F8FAFC;
-      --green: #10B981; --green-bg: #D1FAE5; --green-text: #065F46;
-      --amber: #F59E0B; --amber-bg: #FEF3C7; --amber-text: #92400E;
-      --red: #EF4444;   --red-bg: #FEE2E2;   --red-text: #991B1B;
-      --white: #FFFFFF;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
-      --shadow-md: 0 4px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
-      --shadow-lg: 0 10px 40px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.08);
-      --radius: 12px; --radius-sm: 8px; --radius-lg: 16px;
+    :root{
+      --blue-900:#0F1F3D;--blue-700:#1E4D8C;--blue-600:#1D6AE5;--blue-500:#3B82F6;--blue-100:#DBEAFE;--blue-50:#EFF6FF;
+      --gray-900:#0F172A;--gray-700:#334155;--gray-600:#475569;--gray-500:#64748B;--gray-400:#94A3B8;
+      --gray-300:#CBD5E1;--gray-200:#E2E8F0;--gray-100:#F1F5F9;--gray-50:#F8FAFC;
+      --green:#10B981;--green-bg:#D1FAE5;--green-text:#065F46;
+      --amber:#F59E0B;--amber-bg:#FEF3C7;--amber-text:#92400E;
+      --red:#EF4444;--red-bg:#FEE2E2;--red-text:#991B1B;
+      --caisse:#8B5CF6;--caisse-bg:#EDE9FE;--caisse-text:#4C1D95;
+      --banque:#0EA5E9;--banque-bg:#E0F2FE;--banque-text:#0C4A6E;
+      --white:#FFFFFF;
+      --shadow-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+      --shadow-lg:0 10px 40px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.08);
+      --r:12px;--r-sm:8px;--r-lg:16px;
     }
-    * { box-sizing:border-box; margin:0; padding:0; }
-    body { background:var(--gray-50); font-family:'Inter',sans-serif; color:var(--gray-900); min-height:100vh; }
-    input,select,textarea { outline:none; font-family:inherit; }
-    button { cursor:pointer; font-family:inherit; border:none; }
-    ::-webkit-scrollbar { width:5px; }
-    ::-webkit-scrollbar-track { background:var(--gray-100); }
-    ::-webkit-scrollbar-thumb { background:var(--gray-300); border-radius:3px; }
-
-    /* Animations */
-    .fade-in { animation: fadeIn .3s ease forwards; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-    .slide-up { animation: slideUp .3s cubic-bezier(.34,1.56,.64,1) forwards; }
-    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-    .pop { animation: pop .4s cubic-bezier(.34,1.56,.64,1) forwards; }
-    @keyframes pop { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
-
-    /* Layout */
-    #root { display:flex; flex-direction:column; min-height:100vh; }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--gray-50);font-family:'Inter',sans-serif;color:var(--gray-900);}
+    input,select,textarea{outline:none;font-family:inherit;}
+    button{cursor:pointer;font-family:inherit;border:none;}
+    ::-webkit-scrollbar{width:5px;}
+    ::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px;}
+    .fade-in{animation:fadeIn .3s ease forwards;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .slide-up{animation:slideUp .35s cubic-bezier(.34,1.56,.64,1) forwards;}
+    @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .pop{animation:pop .35s cubic-bezier(.34,1.56,.64,1) forwards;}
+    @keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 
     /* Sidebar */
-    .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:var(--blue-900); display:flex; flex-direction:column; z-index:100; }
-    .sidebar-logo { padding:28px 24px 20px; border-bottom:1px solid rgba(255,255,255,.08); }
-    .sidebar-logo h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--white); letter-spacing:-.3px; }
-    .sidebar-logo p { font-size:11px; color:rgba(255,255,255,.4); margin-top:3px; letter-spacing:.05em; text-transform:uppercase; }
-    .sidebar-nav { flex:1; padding:16px 12px; display:flex; flex-direction:column; gap:4px; }
-    .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; color:rgba(255,255,255,.55); font-size:13px; font-weight:500; transition:all .2s; position:relative; }
-    .nav-item:hover { background:rgba(255,255,255,.07); color:rgba(255,255,255,.9); }
-    .nav-item.active { background:var(--blue-600); color:var(--white); box-shadow:0 4px 12px rgba(29,106,229,.4); }
-    .nav-item .badge { position:absolute; right:10px; background:var(--red); color:#fff; border-radius:99px; min-width:18px; height:18px; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 5px; }
-    .nav-icon { font-size:16px; width:20px; text-align:center; }
-    .sidebar-footer { padding:16px 12px; border-top:1px solid rgba(255,255,255,.08); }
-    .user-chip { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); background:rgba(255,255,255,.07); }
-    .user-avatar { width:32px; height:32px; border-radius:50%; background:var(--blue-600); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
-    .user-name { font-size:13px; font-weight:600; color:var(--white); }
-    .user-role { font-size:10px; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.05em; }
-    .logout-btn { margin-top:8px; width:100%; padding:8px; background:rgba(255,255,255,.05); color:rgba(255,255,255,.5); border-radius:var(--radius-sm); font-size:12px; transition:all .2s; }
-    .logout-btn:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.8); }
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--blue-900);display:flex;flex-direction:column;z-index:100;}
+    .sb-logo{padding:26px 22px 18px;border-bottom:1px solid rgba(255,255,255,.08);}
+    .sb-logo h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+    .sb-logo p{font-size:10px;color:rgba(255,255,255,.35);margin-top:3px;text-transform:uppercase;letter-spacing:.09em;}
+    .sb-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+    .sb-section{font-size:9px;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.12em;padding:10px 10px 3px;}
+    .nav-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--r-sm);cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;transition:all .18s;position:relative;}
+    .nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9);}
+    .nav-item.active{background:var(--blue-600);color:#fff;box-shadow:0 4px 12px rgba(29,106,229,.35);}
+    .nav-badge{position:absolute;right:10px;background:var(--red);color:#fff;border-radius:99px;min-width:17px;height:17px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+    .sb-footer{padding:14px 10px;border-top:1px solid rgba(255,255,255,.08);}
+    .user-chip{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--r-sm);background:rgba(255,255,255,.07);}
+    .ua{width:30px;height:30px;border-radius:50%;background:var(--blue-600);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+    .un{font-size:12px;font-weight:600;color:#fff;}
+    .ur{font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;}
+    .logout-btn{margin-top:7px;width:100%;padding:7px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);border-radius:var(--r-sm);font-size:11px;transition:all .2s;}
+    .logout-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);}
 
     /* Main */
-    .main { margin-left:240px; padding:32px; min-height:100vh; }
-    .page-header { margin-bottom:28px; }
-    .page-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:26px; font-weight:800; color:var(--gray-900); letter-spacing:-.5px; }
-    .page-sub { font-size:13px; color:var(--gray-500); margin-top:4px; }
+    .main{margin-left:240px;padding:28px 28px 70px;}
+    .ph{margin-bottom:22px;display:flex;justify-content:space-between;align-items:flex-start;}
+    .pt{font-family:'Plus Jakarta Sans',sans-serif;font-size:23px;font-weight:800;color:var(--gray-900);letter-spacing:-.4px;}
+    .ps{font-size:12px;color:var(--gray-500);margin-top:3px;}
+
+    /* Solde cards */
+    .solde-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:22px;}
+    .solde-card{border-radius:var(--r-lg);padding:20px 22px;border:1px solid var(--gray-200);background:var(--white);position:relative;overflow:hidden;}
+    .solde-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;}
+    .solde-card.caisse::before{background:var(--caisse);}
+    .solde-card.banque::before{background:var(--banque);}
+    .solde-card.total::before{background:var(--blue-600);}
+    .sc-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px;}
+    .sc-icon.caisse{background:var(--caisse-bg);}
+    .sc-icon.banque{background:var(--banque-bg);}
+    .sc-icon.total{background:var(--blue-50);}
+    .sc-label{font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+    .sc-value{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.4px;}
+    .sc-sub{font-size:11px;color:var(--gray-400);margin-top:4px;}
+    .sc-breakdown{display:flex;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);}
+    .sc-br-item{flex:1;}
+    .sc-br-label{font-size:10px;color:var(--gray-400);}
+    .sc-br-val{font-size:12px;font-weight:700;margin-top:1px;}
 
     /* Cards */
-    .card { background:var(--white); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
-    .card-header { padding:20px 24px 0; }
-    .card-body { padding:20px 24px; }
-    .card-title { font-size:13px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.06em; }
-
-    /* Stat cards */
-    .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
-    .stat-card { background:var(--white); border-radius:var(--radius-lg); padding:22px 24px; box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
-    .stat-card.blue { background:var(--blue-600); border-color:var(--blue-600); }
-    .stat-label { font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
-    .stat-card.blue .stat-label { color:rgba(255,255,255,.7); }
-    .stat-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800; color:var(--gray-900); letter-spacing:-.5px; }
-    .stat-card.blue .stat-value { color:var(--white); }
-    .stat-sub { font-size:12px; color:var(--gray-400); margin-top:4px; }
-    .stat-card.blue .stat-sub { color:rgba(255,255,255,.6); }
+    .card{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--gray-200);}
+    .card-hdr{padding:16px 20px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;}
+    .card-title{font-size:13px;font-weight:700;color:var(--gray-700);}
 
     /* Table */
-    .table-wrap { overflow:hidden; }
-    table { width:100%; border-collapse:collapse; }
-    th { font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.06em; padding:12px 16px; background:var(--gray-50); border-bottom:1px solid var(--gray-200); text-align:left; }
-    td { padding:14px 16px; border-bottom:1px solid var(--gray-100); font-size:13px; color:var(--gray-700); vertical-align:middle; }
-    tr:last-child td { border-bottom:none; }
-    tr:hover td { background:var(--gray-50); }
-    .row-actions { opacity:0; transition:opacity .15s; display:flex; gap:6px; }
-    tr:hover .row-actions { opacity:1; }
+    table{width:100%;border-collapse:collapse;}
+    th{font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);text-align:left;}
+    td{padding:12px 14px;border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700);vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:var(--gray-50);}
+    .row-acts{opacity:0;transition:opacity .15s;display:flex;gap:6px;}
+    tr:hover .row-acts{opacity:1;}
 
     /* Badges */
-    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:99px; font-size:11px; font-weight:600; }
-    .badge.pending  { background:var(--amber-bg); color:var(--amber-text); }
-    .badge.approved { background:var(--green-bg);  color:var(--green-text); }
-    .badge.rejected { background:var(--red-bg);    color:var(--red-text);   }
+    .badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:600;}
+    .badge.pending{background:var(--amber-bg);color:var(--amber-text);}
+    .badge.paid{background:var(--green-bg);color:var(--green-text);}
+    .badge.caisse{background:var(--caisse-bg);color:var(--caisse-text);}
+    .badge.banque{background:var(--banque-bg);color:var(--banque-text);}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:var(--r-sm);font-size:12px;font-weight:600;transition:all .18s;cursor:pointer;border:none;}
+    .btn-primary{background:var(--blue-600);color:#fff;box-shadow:0 2px 8px rgba(29,106,229,.25);}
+    .btn-primary:hover{background:var(--blue-700);transform:translateY(-1px);}
+    .btn-caisse{background:var(--caisse);color:#fff;}
+    .btn-caisse:hover{background:#7C3AED;}
+    .btn-banque{background:var(--banque);color:#fff;}
+    .btn-banque:hover{background:#0284C7;}
+    .btn-ghost{background:transparent;color:var(--gray-600);border:1px solid var(--gray-200);}
+    .btn-ghost:hover{background:var(--gray-50);}
+    .btn-sm{padding:5px 11px;font-size:11px;}
+    .btn-icon{width:28px;height:28px;padding:0;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:12px;}
+    .btn-pay{background:var(--green-bg);color:var(--green-text);border:1px solid #A7F3D0;font-size:11px;padding:5px 10px;}
+    .btn-pay:hover{background:#A7F3D0;}
 
     /* Filters */
-    .filters { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-    .filter-btn { padding:6px 14px; border-radius:99px; font-size:12px; font-weight:500; background:var(--white); border:1px solid var(--gray-200); color:var(--gray-600); transition:all .2s; cursor:pointer; }
-    .filter-btn:hover { border-color:var(--blue-500); color:var(--blue-600); }
-    .filter-btn.active { background:var(--blue-600); border-color:var(--blue-600); color:var(--white); }
-    .filter-select { padding:6px 12px; border-radius:99px; font-size:12px; font-weight:500; background:var(--white); border:1px solid var(--gray-200); color:var(--gray-600); cursor:pointer; }
-
-    /* Action buttons */
-    .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; transition:all .2s; cursor:pointer; border:none; }
-    .btn-primary { background:var(--blue-600); color:var(--white); box-shadow:0 2px 8px rgba(29,106,229,.3); }
-    .btn-primary:hover { background:var(--blue-700); box-shadow:0 4px 16px rgba(29,106,229,.4); transform:translateY(-1px); }
-    .btn-ghost { background:transparent; color:var(--gray-600); border:1px solid var(--gray-200); }
-    .btn-ghost:hover { background:var(--gray-50); border-color:var(--gray-300); }
-    .btn-sm { padding:6px 12px; font-size:12px; }
-    .btn-approve { background:var(--green-bg); color:var(--green-text); border:1px solid #A7F3D0; }
-    .btn-approve:hover { background:#A7F3D0; }
-    .btn-reject  { background:var(--red-bg); color:var(--red-text); border:1px solid #FCA5A5; }
-    .btn-reject:hover  { background:#FCA5A5; }
-    .btn-icon { width:32px; height:32px; padding:0; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:14px; }
-
-    /* Cat color dot */
-    .cat-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
-
-    /* Bar chart */
-    .bar-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-    .bar-label { font-size:12px; color:var(--gray-600); width:110px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .bar-track { flex:1; background:var(--gray-100); border-radius:99px; height:8px; overflow:hidden; }
-    .bar-fill { height:100%; border-radius:99px; transition:width .8s cubic-bezier(.34,1.56,.64,1); }
-    .bar-amt { font-size:12px; font-weight:600; color:var(--gray-700); width:90px; text-align:right; flex-shrink:0; }
+    .filters{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+    .filter-btn{padding:5px 13px;border-radius:99px;font-size:11px;font-weight:500;background:var(--white);border:1px solid var(--gray-200);color:var(--gray-600);transition:all .18s;cursor:pointer;}
+    .filter-btn.active{background:var(--blue-600);border-color:var(--blue-600);color:#fff;}
+    .filter-select{padding:5px 11px;border-radius:99px;font-size:11px;background:var(--white);border:1px solid var(--gray-200);color:var(--gray-600);cursor:pointer;}
 
     /* Form */
-    .form-group { margin-bottom:16px; }
-    .form-label { display:block; font-size:12px; font-weight:600; color:var(--gray-600); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
-    .form-input { width:100%; padding:10px 14px; background:var(--gray-50); border:1.5px solid var(--gray-200); border-radius:var(--radius-sm); font-size:13px; color:var(--gray-900); transition:border .2s; }
-    .form-input:focus { border-color:var(--blue-500); background:var(--white); }
-    .form-input.error { border-color:var(--red); }
-    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .form-group{margin-bottom:13px;}
+    .form-label{display:block;font-size:11px;font-weight:600;color:var(--gray-600);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;}
+    .form-input{width:100%;padding:9px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r-sm);font-size:13px;color:var(--gray-900);transition:border .18s;}
+    .form-input:focus{border-color:var(--blue-500);background:#fff;}
+    .form-input.error{border-color:var(--red);}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+    /* Type selector */
+    .type-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+    .type-btn{padding:12px;border-radius:var(--r-sm);border:2px solid var(--gray-200);cursor:pointer;text-align:center;transition:all .18s;background:#fff;}
+    .type-btn.caisse.selected{border-color:var(--caisse);background:var(--caisse-bg);}
+    .type-btn.banque.selected{border-color:var(--banque);background:var(--banque-bg);}
+    .type-btn:hover{border-color:var(--gray-300);}
+    .type-icon{font-size:22px;margin-bottom:4px;}
+    .type-label{font-size:12px;font-weight:600;color:var(--gray-700);}
+    .type-sub{font-size:10px;color:var(--gray-400);margin-top:2px;}
 
     /* Modal */
-    .modal-overlay { position:fixed; inset:0; background:rgba(15,31,61,.5); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
-    .modal { background:var(--white); border-radius:var(--radius-lg); padding:28px; width:100%; max-width:460px; box-shadow:var(--shadow-lg); }
-    .modal-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:700; color:var(--gray-900); margin-bottom:20px; }
-    .modal-footer { display:flex; gap:10px; margin-top:24px; }
+    .overlay{position:fixed;inset:0;background:rgba(15,31,61,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+    .modal{background:#fff;border-radius:var(--r-lg);padding:24px;width:100%;max-width:460px;box-shadow:var(--shadow-lg);}
+    .modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:var(--gray-900);margin-bottom:16px;}
+    .modal-footer{display:flex;gap:10px;margin-top:18px;}
 
     /* Toast */
-    .toast { position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:var(--radius-sm); font-size:13px; font-weight:500; z-index:999; box-shadow:var(--shadow-lg); display:flex; align-items:center; gap:8px; }
+    .toast{position:fixed;top:18px;right:18px;padding:10px 16px;border-radius:var(--r-sm);font-size:12px;font-weight:500;z-index:9999;box-shadow:var(--shadow-lg);color:#fff;display:flex;align-items:center;gap:7px;}
+
+    /* Progress bar */
+    .progress-bar{position:fixed;top:0;left:0;right:0;height:3px;background:var(--blue-600);z-index:9999;}
 
     /* Login */
-    .login-page { min-height:100vh; display:flex; background:var(--gray-50); }
-    .login-left { width:420px; flex-shrink:0; background:var(--blue-900); display:flex; flex-direction:column; justify-content:center; padding:48px; }
-    .login-right { flex:1; display:flex; align-items:center; justify-content:center; padding:32px; }
-    .login-brand { font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; font-weight:800; color:var(--white); margin-bottom:8px; }
-    .login-tagline { font-size:14px; color:rgba(255,255,255,.5); line-height:1.6; margin-bottom:40px; }
-    .login-feat { display:flex; align-items:center; gap:10px; margin-bottom:14px; color:rgba(255,255,255,.7); font-size:13px; }
-    .login-feat-icon { width:28px; height:28px; background:rgba(255,255,255,.1); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
-    .login-card { background:var(--white); border-radius:var(--radius-lg); padding:36px; width:100%; max-width:400px; box-shadow:var(--shadow-lg); border:1px solid var(--gray-200); }
-    .login-card-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; font-weight:800; color:var(--gray-900); margin-bottom:6px; }
-    .login-card-sub { font-size:13px; color:var(--gray-500); margin-bottom:28px; }
-    .profile-grid { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
-    .profile-btn { display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:var(--radius-sm); border:1.5px solid var(--gray-200); background:var(--white); cursor:pointer; transition:all .2s; text-align:left; width:100%; }
-    .profile-btn:hover { border-color:var(--blue-500); background:var(--blue-50); }
-    .profile-btn.admin-card { border-color:var(--blue-200); background:var(--blue-50); }
-    .profile-btn.admin-card:hover { border-color:var(--blue-500); background:var(--blue-100); }
-    .profile-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
-    .profile-avatar.admin { background:var(--blue-100); }
-    .profile-avatar.member { background:var(--gray-100); }
-    .profile-name { font-size:14px; font-weight:600; color:var(--gray-900); }
-    .profile-role { font-size:11px; color:var(--gray-500); margin-top:1px; }
-    .profile-btn.admin-card .profile-role { color:var(--blue-600); font-weight:600; }
-    .profile-arrow { margin-left:auto; color:var(--gray-400); font-size:16px; }
-
-    /* FAB */
-    .fab { position:fixed; bottom:28px; right:28px; width:52px; height:52px; border-radius:50%; background:var(--blue-600); color:var(--white); font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(29,106,229,.4); z-index:200; transition:all .2s; border:none; cursor:pointer; }
-    .fab:hover { transform:scale(1.08); box-shadow:0 8px 28px rgba(29,106,229,.5); }
+    .login-page{min-height:100vh;display:flex;}
+    .login-left{width:400px;flex-shrink:0;background:var(--blue-900);display:flex;flex-direction:column;justify-content:center;padding:48px;}
+    .login-right{flex:1;display:flex;align-items:center;justify-content:center;padding:32px;background:var(--gray-50);}
+    .login-brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:25px;font-weight:800;color:#fff;margin-bottom:6px;}
+    .login-tag{font-size:13px;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:34px;}
+    .login-feat{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:rgba(255,255,255,.65);font-size:12px;}
+    .login-feat-icon{width:28px;height:28px;background:rgba(255,255,255,.1);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+    .login-card{background:#fff;border-radius:var(--r-lg);padding:32px;width:100%;max-width:400px;box-shadow:var(--shadow-lg);border:1px solid var(--gray-200);}
+    .login-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px;}
+    .login-card-sub{font-size:12px;color:var(--gray-500);margin-bottom:22px;}
+    .profile-grid{display:flex;flex-direction:column;gap:8px;}
+    .profile-btn{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:var(--r-sm);border:1.5px solid var(--gray-200);background:#fff;cursor:pointer;transition:all .18s;text-align:left;width:100%;}
+    .profile-btn:hover{border-color:var(--blue-500);background:var(--blue-50);}
+    .profile-btn.adm{border-color:var(--blue-200);background:var(--blue-50);}
+    .profile-btn.adm:hover{border-color:var(--blue-500);background:var(--blue-100);}
 
     /* Sync bar */
-    #sync-bar { position:fixed; bottom:0; left:240px; right:0; background:var(--white); border-top:1px solid var(--gray-200); padding:5px 24px; font-size:11px; color:var(--gray-400); display:flex; align-items:center; gap:6px; z-index:50; }
-    .sync-dot { width:6px; height:6px; background:var(--green); border-radius:50%; }
+    #sync-bar{position:fixed;bottom:0;left:240px;right:0;background:#fff;border-top:1px solid var(--gray-200);padding:5px 22px;font-size:10px;color:var(--gray-400);display:flex;align-items:center;gap:7px;z-index:50;}
+    .sync-dot{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite;}
+    .sync-dot.ok{background:var(--green);}
+    .sync-dot.err{background:var(--red);}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-    /* Team cards */
-    .team-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
-    .team-card { background:var(--white); border-radius:var(--radius-lg); padding:20px; box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
-    .team-avatar { width:48px; height:48px; border-radius:50%; background:var(--blue-50); border:2px solid var(--blue-100); display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:12px; }
-    .team-name { font-size:14px; font-weight:700; color:var(--gray-900); }
-    .team-role { font-size:11px; color:var(--gray-500); margin-top:2px; text-transform:uppercase; letter-spacing:.05em; }
-    .team-stat { margin-top:14px; padding-top:14px; border-top:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center; }
-    .team-stat-val { font-size:14px; font-weight:700; color:var(--blue-600); }
-    .team-stat-label { font-size:11px; color:var(--gray-400); }
-
-    /* Color picker */
-    .color-grid { display:flex; gap:8px; flex-wrap:wrap; }
-    .color-swatch { width:28px; height:28px; border-radius:50%; cursor:pointer; transition:transform .15s; border:2px solid transparent; }
-    .color-swatch:hover { transform:scale(1.15); }
-    .color-swatch.selected { border-color:var(--gray-900); transform:scale(1.1); }
-
-    /* Icon picker */
-    .icon-grid { display:flex; flex-wrap:wrap; gap:4px; max-height:140px; overflow-y:auto; background:var(--gray-50); border-radius:var(--radius-sm); padding:8px; }
-    .icon-btn { font-size:20px; padding:6px 8px; border-radius:6px; cursor:pointer; background:none; border:none; transition:background .15s; }
-    .icon-btn:hover { background:var(--gray-200); }
-    .icon-btn.selected { background:var(--blue-100); }
-
-    /* Responsive */
-    @media (max-width:768px) {
-      .sidebar { display:none; }
-      .main { margin-left:0; padding:16px; }
-      .stats-grid { grid-template-columns:1fr; }
-      .login-left { display:none; }
-      #sync-bar { left:0; }
+    @media(max-width:768px){
+      .sidebar,.login-left{display:none;}
+      .main{margin-left:0;padding:16px;}
+      .solde-grid{grid-template-columns:1fr;}
+      #sync-bar{left:0;}
     }
   </style>
 </head>
 <body>
 <div id="root"></div>
+<div id="sync-bar">
+  <span class="sync-dot ok" id="sdot"></span>
+  <span id="sst">Chargement...</span> · <span id="stm">—</span>
+  <span id="rbtn" style="margin-left:auto;cursor:pointer;color:var(--blue-600);display:none" onclick="window._loadAll&&window._loadAll()">↻ Actualiser</span>
+</div>
 
 <script type="text/babel">
-const { useState, useRef, useEffect } = React;
+const { useState, useEffect, useCallback } = React;
 
+// ── Constants ─────────────────────────────────────────────────────────────────
 const DEFAULT_CATS = [
   { id:"siege",       label:"Frais Siège",         icon:"🏢", color:"#1D6AE5" },
   { id:"atelier",     label:"Frais Atelier",        icon:"🔧", color:"#8B5CF6" },
@@ -243,200 +237,200 @@ const DEFAULT_CATS = [
   { id:"deplacement", label:"Déplacements",         icon:"✈️", color:"#06B6D4" },
   { id:"other",       label:"Autre",                icon:"📦", color:"#64748B" },
 ];
-const COLORS = ["#3B82F6","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#64748B","#06B6D4","#84CC16","#F97316","#6366F1","#14B8A6"];
-const ICONS  = ["🍽️","🚗","🏠","💊","🎬","🛍️","📦","✈️","📚","🎮","⚽","🏋️","💄","🐾","☕","🍕","🛒","💡","📱","🎓","🏦","🎁"];
+
+const COLORS = ["#1D6AE5","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#64748B","#06B6D4","#84CC16","#F97316","#6366F1","#14B8A6"];
+const ICONS  = ["🏢","🔧","📋","⛽","🚘","✈️","📦","🍽️","🚗","🏠","💊","🎮","☕","🛒","💡","📱","🎓","🏦","🎁","📊","💰","🏭"];
 
 const DEFAULT_USERS = [
-  { id:"admin",  name:"Youcef",   role:"admin",  avatar:"👑", password:"admin2026" },
-  { id:"admin2", name:"Souad",    role:"admin",  avatar:"👑", password:"admin2027" },
-  { id:"user1",  name:"Belmahi",  role:"member", avatar:"👤", password:"b123" },
-  { id:"user2",  name:"Tariq",    role:"member", avatar:"👤", password:"t123" },
-  { id:"user3",  name:"Amine",    role:"member", avatar:"👤", password:"a123" },
+  { id:"admin",  name:"Youcef",  role:"admin",  avatar:"👑", password:"admin2026" },
+  { id:"admin2", name:"Souad",   role:"admin",  avatar:"👑", password:"admin2027" },
+  { id:"user1",  name:"Belmahi", role:"member", avatar:"👤", password:"b123" },
+  { id:"user2",  name:"Tariq",   role:"member", avatar:"👤", password:"t123" },
+  { id:"user3",  name:"Amine",   role:"member", avatar:"👤", password:"a123" },
 ];
 
-const STATUS = {
-  pending:  { label:"En attente", cls:"pending",  icon:"⏳" },
-  approved: { label:"Approuvée",  cls:"approved", icon:"✅" },
-  rejected: { label:"Refusée",    cls:"rejected", icon:"❌" },
+// vtype: "caisse" | "banque"
+const VTYPES = {
+  caisse: { label:"Virement Caisse",   icon:"🏦", color:"#8B5CF6", cls:"caisse" },
+  banque: { label:"Virement Bancaire", icon:"🏛️", color:"#0EA5E9", cls:"banque" },
 };
 
-function fmt(n) { return new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(n)+" DA"; }
+function fmt(n) { return new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(n||0)+" DA"; }
+function fmtS(n) { const s=fmt(Math.abs(n||0)); return (n||0)>=0?"+"+s:"-"+s; }
 
-const LS = {
-  get(key,fb){ try{const v=localStorage.getItem(key);return v?JSON.parse(v):fb;}catch{return fb;} },
-  set(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch{} try{db.ref(key).set(val);updateSyncTime();}catch{} },
-};
-function updateSyncTime(){ const el=document.getElementById("sync-time"); if(el) el.textContent=new Date().toLocaleTimeString("fr-FR"); }
+function setSyncUI(ok, msg, time) {
+  const d=document.getElementById("sdot"),s=document.getElementById("sst"),t=document.getElementById("stm");
+  if(d){d.className="sync-dot "+(ok?"ok":"err");}
+  if(s) s.textContent=msg;
+  if(t&&time) t.textContent=time;
+}
 
 function App() {
-  const [currentUser,   setCurrentUser]   = useState(()=>{
-    try { const s=localStorage.getItem("eq_session"); return s?JSON.parse(s):null; } catch { return null; }
-  });
-  const [loginStep,     setLoginStep]     = useState(null);
-  const [pwInput,       setPwInput]       = useState("");
-  const [pwError,       setPwError]       = useState(false);
-  const [users,         setUsers]         = useState(()=>LS.get("eq_users",DEFAULT_USERS));
-  const [categories,    setCategories]    = useState(DEFAULT_CATS);
-  const [expenses,      setExpenses]      = useState(()=>LS.get("eq_expenses",[]));
-  const [view,          setView]          = useState("dashboard");
-  const [filterStatus,  setFilterStatus]  = useState("all");
-  const [filterMember,  setFilterMember]  = useState("all");
-  const [showForm,      setShowForm]      = useState(false);
-  const [editingCat,    setEditingCat]    = useState(null);
-  const [iconOpen,      setIconOpen]      = useState(false);
-  const [rejectId,      setRejectId]      = useState(null);
-  const [rejectNote,    setRejectNote]    = useState("");
-  const [toast,         setToast]         = useState(null);
-  const [form, setForm] = useState({label:"",amount:"",category:"siege",date:new Date().toISOString().slice(0,10),note:""});
-  const nextId    = useRef(LS.get("eq_nextid",500));
-  const nextCatId = useRef(600);
+  const [currentUser, setCurrentUser] = useState(()=>{ try{const s=localStorage.getItem("eq_session");return s?JSON.parse(s):null;}catch{return null;} });
+  const [loginStep,   setLoginStep]   = useState(null);
+  const [pwInput,     setPwInput]     = useState("");
+  const [pwError,     setPwError]     = useState(false);
+  const [users]                       = useState(DEFAULT_USERS);
+  const [categories,  setCategories]  = useState(DEFAULT_CATS);
+  const [expenses,    setExpenses]    = useState([]);
+  const [revenues,    setRevenues]    = useState([]);
+  const [view,        setView]        = useState("dashboard");
+  const [fStatus,     setFStatus]     = useState("all");
+  const [fVtype,      setFVtype]      = useState("all");
+  const [fMember,     setFMember]     = useState("all");
+  const [showExpForm, setShowExpForm] = useState(false);
+  const [showRevForm, setShowRevForm] = useState(false);
+  const [editingCat,  setEditingCat]  = useState(null);
+  const [iconOpen,    setIconOpen]    = useState(false);
+  const [toast,       setToast]       = useState(null);
+  const [loading,     setLoading]     = useState(false);
+
+  const [expForm, setExpForm] = useState({label:"",amount:"",category:"siege",vtype:"caisse",date:new Date().toISOString().slice(0,10),note:""});
+  const [revForm, setRevForm] = useState({label:"",amount:"",vtype:"caisse",userId:"user1",date:new Date().toISOString().slice(0,10),note:""});
+
   const isAdmin = currentUser?.role==="admin";
 
-  // Force push new categories on login
-  useEffect(()=>{
-    if(!currentUser) return;
-    db.ref("eq_cats").set(DEFAULT_CATS);
-    LS.set("eq_cats", DEFAULT_CATS);
-  },[currentUser]);
+  // ── Load ────────────────────────────────────────────────────────────────────
+  const loadAll = useCallback(async () => {
+    try {
+      const [exps, revs] = await Promise.all([FB.getExpenses(), FB.getRevenues()]);
+      setExpenses(exps); setRevenues(revs);
+      setSyncUI(true, "Synchronisé", new Date().toLocaleTimeString("fr-FR"));
+    } catch { setSyncUI(false, "Erreur connexion", null); }
+  }, []);
 
-  useEffect(()=>{
-    if(!currentUser) return;
-    const refs=[];
+  useEffect(() => {
+    if (!currentUser) return;
+    FB.getCats().then(c => { if(c&&c.length) setCategories(c); else FB.setCats(DEFAULT_CATS); }).catch(()=>{});
+    loadAll();
+    window._loadAll = loadAll;
+    const rb = document.getElementById("rbtn");
+    if (rb) rb.style.display = "block";
+    const iv = setInterval(loadAll, 5000);
+    const onVis = () => { if(document.visibilityState==="visible") loadAll(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
+  }, [currentUser?.id]);
 
-    // Expenses — realtime, reconnect on disconnect
-    const er=db.ref("eq_expenses");
-    er.on("value", s=>{
-      if(s.exists()) {
-        const val = s.val();
-        const arr = Array.isArray(val) ? val : Object.values(val);
-        setExpenses(arr.filter(e=>e&&e.id));
-      } else {
-        setExpenses([]);
-      }
-    }, err=>console.warn("Firebase expenses error:", err));
-    refs.push(er);
+  const getCat   = id => categories.find(c=>c.id===id)||{label:"Autre",icon:"📦",color:"#64748B"};
+  const getUser  = id => users.find(u=>u.id===id)||{name:"Inconnu",avatar:"👤"};
+  const showToast= (msg,color="#10B981") => { setToast({msg,color}); setTimeout(()=>setToast(null),2800); };
 
-    // Categories
-    const cr=db.ref("eq_cats");
-    cr.on("value", s=>{ if(s.exists()) setCategories(Array.isArray(s.val()) ? s.val() : Object.values(s.val())); },
-      err=>console.warn("Firebase cats error:", err));
-    refs.push(cr);
-
-    // Users
-    const ur=db.ref("eq_users");
-    ur.on("value", s=>{ if(s.exists()) setUsers(Array.isArray(s.val()) ? s.val() : Object.values(s.val())); },
-      err=>console.warn("Firebase users error:", err));
-    refs.push(ur);
-
-    // Keep connection alive on mobile (prevents Firebase from going offline)
-    const connRef=db.ref(".info/connected");
-    connRef.on("value", s=>{
-      const el=document.getElementById("sync-time");
-      if(el) el.textContent = s.val() ? new Date().toLocaleTimeString("fr-FR") : "reconnexion...";
-    });
-    refs.push(connRef);
-
-    return ()=>refs.forEach(r=>r.off());
-  },[currentUser]);
-
-  // Aggressive sync: poll every 5s + refresh when page becomes visible
-  useEffect(()=>{
-    if(!currentUser) return;
-
-    function fetchAll() {
-      db.ref("eq_expenses").once("value").then(s=>{
-        if(s.exists()) {
-          const val = s.val();
-          const arr = Array.isArray(val) ? val : Object.values(val);
-          setExpenses(arr.filter(e=>e&&e.id));
-        }
-      }).catch(()=>{});
-    }
-
-    // Poll every 5s
-    const iv = setInterval(fetchAll, 5000);
-
-    // Re-fetch when user comes back to the tab/app (mobile background → foreground)
-    function onVisible() { if(document.visibilityState==="visible") fetchAll(); }
-    document.addEventListener("visibilitychange", onVisible);
-
-    // Re-fetch when network reconnects
-    function onOnline() { fetchAll(); }
-    window.addEventListener("online", onOnline);
-
-    return ()=>{
-      clearInterval(iv);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("online", onOnline);
+  // ── Finance calculations ─────────────────────────────────────────────────────
+  function calcSoldes() {
+    const totalCaisse  = revenues.filter(r=>r.vtype==="caisse").reduce((s,r)=>s+(r.amount||0),0);
+    const totalBanque  = revenues.filter(r=>r.vtype==="banque").reduce((s,r)=>s+(r.amount||0),0);
+    const depCaisse    = expenses.filter(e=>e.vtype==="caisse"&&e.status==="paid").reduce((s,e)=>s+(e.amount||0),0);
+    const depBanque    = expenses.filter(e=>e.vtype==="banque"&&e.status==="paid").reduce((s,e)=>s+(e.amount||0),0);
+    const depPendingC  = expenses.filter(e=>e.vtype==="caisse"&&e.status==="pending").reduce((s,e)=>s+(e.amount||0),0);
+    const depPendingB  = expenses.filter(e=>e.vtype==="banque"&&e.status==="pending").reduce((s,e)=>s+(e.amount||0),0);
+    return {
+      caisse: { entrees:totalCaisse, sorties:depCaisse, solde:totalCaisse-depCaisse, pending:depPendingC },
+      banque: { entrees:totalBanque, sorties:depBanque, solde:totalBanque-depBanque, pending:depPendingB },
     };
-  },[currentUser?.id]);
-
-  const saveExp  = v=>{
-    const arr = Array.isArray(v) ? v : Object.values(v);
-    setExpenses(arr);
-    // Store as object keyed by id for Firebase (avoids array→object conversion issues)
-    const obj = {};
-    arr.forEach(e=>{ obj[e.id] = e; });
-    try { db.ref("eq_expenses").set(obj); updateSyncTime(); } catch {}
-    try { localStorage.setItem("eq_expenses", JSON.stringify(arr)); } catch {}
-    try { localStorage.setItem("eq_nextid", nextId.current); } catch {}
-  };
-  const saveCats = v=>{ setCategories(v); LS.set("eq_cats",v); };
-  const saveUsrs = v=>{ setUsers(v);      LS.set("eq_users",v); };
-  const getCat   = id=>categories.find(c=>c.id===id)||{label:"Autre",icon:"📦",color:"#64748B"};
-  const getUser  = id=>users.find(u=>u.id===id)||{name:"Inconnu",avatar:"👤"};
-  const showToast= (msg,color="#10B981")=>{ setToast({msg,color}); setTimeout(()=>setToast(null),2500); };
-
-  const myExp      = isAdmin ? expenses : expenses.filter(e=>e.userId===currentUser?.id);
-  const visibleExp = isAdmin
-    ? expenses.filter(e=>(filterStatus==="all"||e.status===filterStatus)&&(filterMember==="all"||e.userId===filterMember))
-    : expenses.filter(e=>e.userId===currentUser?.id);
-  const approvedExp  = (isAdmin?expenses:myExp).filter(e=>e.status==="approved");
-  const pendingExp   = expenses.filter(e=>e.status==="pending");
-  const myTotal      = approvedExp.reduce((s,e)=>s+e.amount,0);
-  const pendingTotal = pendingExp.filter(e=>isAdmin||e.userId===currentUser?.id).reduce((s,e)=>s+e.amount,0);
-  const statTotal    = approvedExp.reduce((s,e)=>s+e.amount,0);
-  const byCat = categories.map(c=>{
-    const total=approvedExp.filter(e=>e.category===c.id).reduce((s,e)=>s+e.amount,0);
-    return {...c,total,pct:statTotal>0?(total/statTotal)*100:0};
-  }).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
-
-  function addExpense(){
-    if(!form.label||!form.amount||isNaN(parseFloat(form.amount))) return;
-    const e={id:nextId.current++,userId:currentUser.id,label:form.label,amount:parseFloat(form.amount),category:form.category,date:form.date,note:form.note,status:"pending"};
-    saveExp([e,...expenses]);
-    setForm({label:"",amount:"",category:"food",date:new Date().toISOString().slice(0,10),note:""});
-    setShowForm(false);
-    showToast("Dépense soumise avec succès","#F59E0B");
   }
-  function approve(id){ saveExp(expenses.map(e=>e.id===id?{...e,status:"approved",rejectNote:undefined}:e)); showToast("Dépense approuvée"); }
-  function reject(id) { saveExp(expenses.map(e=>e.id===id?{...e,status:"rejected",rejectNote}:e)); setRejectId(null); setRejectNote(""); showToast("Dépense refusée","#EF4444"); }
-  function delExp(id) { saveExp(expenses.filter(e=>e.id!==id)); }
-  function saveCat(){
-    if(!editingCat.label.trim()) return;
-    const upd=editingCat.id?categories.map(c=>c.id===editingCat.id?{...editingCat}:c):[...categories,{...editingCat,id:"cat_"+(nextCatId.current++)}];
-    saveCats(upd); setEditingCat(null);
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
+  async function markPaid(id) {
+    setExpenses(prev=>prev.map(e=>String(e.id)===String(id)?{...e,status:"paid"}:e));
+    setLoading(true);
+    try { await FB.markPaid(id); showToast("Dépense marquée Payée ✅"); }
+    catch(err) { showToast("Erreur: "+err.message,"#EF4444"); await loadAll(); }
+    setLoading(false);
   }
-  function delCat(id){ saveCats(categories.filter(c=>c.id!==id)); saveExp(expenses.map(e=>e.category===id?{...e,category:"other"}:e)); }
-  function exportCSV(){
-    const rows=[["Date","Membre","Description","Catégorie","Montant (DA)","Statut","Note refus"],
-      ...expenses.sort((a,b)=>a.date.localeCompare(b.date)).map(e=>{
-        const c=getCat(e.category),u=getUser(e.userId);
-        return [e.date,u.name,`"${e.label.replace(/"/g,'""')}"`,c.label,e.amount,STATUS[e.status].label,e.rejectNote||""];
-      })];
+
+  async function addExpense() {
+    if (!expForm.label||!expForm.amount||isNaN(parseFloat(expForm.amount))) return;
+    const exp = {id:Date.now(), userId:currentUser.id, label:expForm.label, amount:parseFloat(expForm.amount), category:expForm.category, vtype:expForm.vtype, date:expForm.date, note:expForm.note||"", status:"pending"};
+    setLoading(true);
+    try {
+      await FB.addExpense(exp); await loadAll();
+      setExpForm({label:"",amount:"",category:"siege",vtype:"caisse",date:new Date().toISOString().slice(0,10),note:""});
+      setShowExpForm(false); showToast("Dépense soumise ⏳","#F59E0B");
+    } catch(err) { showToast("Erreur: "+err.message,"#EF4444"); }
+    setLoading(false);
+  }
+
+  async function addRevenue() {
+    if (!revForm.label||!revForm.amount||isNaN(parseFloat(revForm.amount))) return;
+    const rev = {id:Date.now(), userId:revForm.userId, label:revForm.label, amount:parseFloat(revForm.amount), vtype:revForm.vtype, date:revForm.date, note:revForm.note||""};
+    setLoading(true);
+    try {
+      await FB.addRevenue(rev); await loadAll();
+      setRevForm({label:"",amount:"",vtype:"caisse",userId:"user1",date:new Date().toISOString().slice(0,10),note:""});
+      setShowRevForm(false); showToast("Virement enregistré ✅");
+    } catch(err) { showToast("Erreur: "+err.message,"#EF4444"); }
+    setLoading(false);
+  }
+
+  async function delExpense(id) {
+    setLoading(true);
+    try { await FB.delExpense(id); await loadAll(); } catch { showToast("Erreur","#EF4444"); }
+    setLoading(false);
+  }
+  async function delRevenue(id) {
+    setLoading(true);
+    try { await FB.delRevenue(id); await loadAll(); } catch { showToast("Erreur","#EF4444"); }
+    setLoading(false);
+  }
+
+  async function saveCat() {
+    if (!editingCat.label.trim()) return;
+    const upd = editingCat.id ? categories.map(c=>c.id===editingCat.id?{...editingCat}:c) : [...categories,{...editingCat,id:"cat_"+Date.now()}];
+    setCategories(upd); await FB.setCats(upd).catch(()=>{}); setEditingCat(null);
+  }
+
+  function exportCSV() {
+    const rows = [
+      ["Type","Sous-type","Date","Membre","Description","Catégorie","Montant (DA)","Statut"],
+      ...revenues.sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(r=>{
+        const u=getUser(r.userId); const vt=VTYPES[r.vtype]||VTYPES.caisse;
+        return ["Revenu",vt.label,r.date,u.name,r.label||"","—",r.amount,"Enregistré"];
+      }),
+      ...expenses.sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(e=>{
+        const c=getCat(e.category),u=getUser(e.userId),vt=VTYPES[e.vtype]||VTYPES.caisse;
+        return ["Dépense",vt.label,e.date,u.name,e.label||"",c.label,e.amount,e.status==="paid"?"Payée":"En attente"];
+      }),
+    ];
     const csv="\uFEFF"+rows.map(r=>r.join(";")).join("\n");
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="depenses.csv"; a.click(); URL.revokeObjectURL(url);
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="finances.csv"; a.click(); URL.revokeObjectURL(url);
   }
 
-  // ── LOGIN ─────────────────────────────────────────────────────────────────
-  if(!currentUser) return (
+  function doLogin() {
+    if (pwInput===loginStep.password) {
+      localStorage.setItem("eq_session",JSON.stringify(loginStep));
+      setCurrentUser(loginStep); setLoginStep(null); setPwInput(""); setPwError(false);
+    } else { setPwError(true); setPwInput(""); }
+  }
+
+  // ── Derived ───────────────────────────────────────────────────────────────────
+  const soldes    = calcSoldes();
+  const pendingN  = expenses.filter(e=>e.status==="pending").length;
+  const myExp     = isAdmin?expenses:expenses.filter(e=>e.userId===currentUser?.id);
+
+  const visibleExp = (isAdmin
+    ? expenses
+    : expenses.filter(e=>e.userId===currentUser?.id)
+  ).filter(e =>
+    (fStatus==="all"||e.status===fStatus) &&
+    (fVtype==="all"||e.vtype===fVtype) &&
+    (fMember==="all"||e.userId===fMember||!isAdmin)
+  ).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+
+  const visibleRev = revenues
+    .filter(r=>(fVtype==="all"||r.vtype===fVtype)&&(fMember==="all"||r.userId===fMember||!isAdmin))
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+
+  // ── LOGIN ──────────────────────────────────────────────────────────────────────
+  if (!currentUser) return (
     <div className="login-page">
       <div className="login-left">
         <div className="login-brand">💼 ExpensesPro</div>
-        <div className="login-tagline">Gérez les dépenses de votre équipe en toute simplicité, avec validation et suivi en temps réel.</div>
-        {[["🔐","Accès sécurisé par profil"],["✅","Validation admin en un clic"],["📊","Statistiques en temps réel"],["🔥","Synchronisé sur tous les appareils"]].map(([icon,text])=>(
-          <div key={text} className="login-feat"><div className="login-feat-icon">{icon}</div>{text}</div>
+        <div className="login-tag">Gestion des virements Caisse & Bancaire et suivi des dépenses de votre équipe.</div>
+        {[["🏦","Virement Caisse — suivi en temps réel"],["🏛️","Virement Bancaire — solde séparé"],["💳","Dépenses liées à Caisse ou Banque"],["🔥","Synchronisé Firebase"]].map(([ic,tx])=>(
+          <div key={tx} className="login-feat"><div className="login-feat-icon">{ic}</div>{tx}</div>
         ))}
       </div>
       <div className="login-right">
@@ -444,35 +438,29 @@ function App() {
           {!loginStep ? (
             <>
               <div className="login-card-title">Connexion</div>
-              <div className="login-card-sub">Sélectionnez votre profil pour continuer</div>
+              <div className="login-card-sub">Sélectionnez votre profil</div>
               <div className="profile-grid">
                 {users.map(u=>(
-                  <button key={u.id} className={`profile-btn ${u.role==="admin"?"admin-card":""}`} onClick={()=>{setLoginStep(u);setPwInput("");setPwError(false);}}>
-                    <div className={`profile-avatar ${u.role==="admin"?"admin":"member"}`}>{u.avatar}</div>
-                    <div>
-                      <div className="profile-name">{u.name}</div>
-                      <div className="profile-role">{u.role==="admin"?"Administrateur":"Membre"}</div>
-                    </div>
-                    <span className="profile-arrow">›</span>
+                  <button key={u.id} className={`profile-btn ${u.role==="admin"?"adm":""}`} onClick={()=>{setLoginStep(u);setPwInput("");setPwError(false);}}>
+                    <div style={{width:36,height:36,borderRadius:"50%",background:u.role==="admin"?"var(--blue-100)":"var(--gray-100)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{u.avatar}</div>
+                    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"var(--gray-900)"}}>{u.name}</div><div style={{fontSize:10,color:u.role==="admin"?"var(--blue-600)":"var(--gray-500)",marginTop:1}}>{u.role==="admin"?"Administrateur":"Membre"}</div></div>
+                    <span style={{color:"var(--gray-400)",fontSize:16}}>›</span>
                   </button>
                 ))}
               </div>
             </>
           ) : (
             <>
-              <button onClick={()=>setLoginStep(null)} style={{background:"none",border:"none",color:"#64748B",fontSize:13,cursor:"pointer",marginBottom:20,display:"flex",alignItems:"center",gap:6}}>← Retour</button>
+              <button onClick={()=>setLoginStep(null)} style={{background:"none",border:"none",color:"var(--gray-500)",fontSize:12,cursor:"pointer",marginBottom:16,display:"flex",alignItems:"center",gap:5}}>← Retour</button>
               <div className="login-card-title">Bonjour, {loginStep.name} 👋</div>
-              <div className="login-card-sub">Entrez votre mot de passe pour accéder à votre espace</div>
+              <div className="login-card-sub">Entrez votre mot de passe</div>
               <div className="form-group">
                 <label className="form-label">Mot de passe</label>
                 <input autoFocus type="password" className={`form-input ${pwError?"error":""}`} placeholder="••••••••"
-                  value={pwInput} onChange={e=>{setPwInput(e.target.value);setPwError(false);}}
-                  onKeyDown={e=>{ if(e.key==="Enter"){ if(pwInput===loginStep.password){localStorage.setItem("eq_session",JSON.stringify(loginStep));setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}}/>
-                {pwError && <div style={{color:"#EF4444",fontSize:12,marginTop:6}}>Mot de passe incorrect. Réessayez.</div>}
+                  value={pwInput} onChange={e=>{setPwInput(e.target.value);setPwError(false);}} onKeyDown={e=>e.key==="Enter"&&doLogin()}/>
+                {pwError&&<div style={{color:"var(--red)",fontSize:11,marginTop:4}}>Mot de passe incorrect.</div>}
               </div>
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>{ if(pwInput===loginStep.password){localStorage.setItem("eq_session",JSON.stringify(loginStep));setCurrentUser(loginStep);setLoginStep(null);}else{setPwError(true);setPwInput("");} }}>
-                Se connecter →
-              </button>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={doLogin}>Se connecter →</button>
             </>
           )}
         </div>
@@ -480,48 +468,41 @@ function App() {
     </div>
   );
 
-  // ── NAVIGATION ─────────────────────────────────────────────────────────────
-  const adminNav  = [{id:"dashboard",icon:"📊",label:"Tableau de bord"},{id:"expenses",icon:"💳",label:"Dépenses",badge:pendingExp.length||0},{id:"team",icon:"👥",label:"Équipe"},{id:"cats",icon:"🏷️",label:"Catégories"}];
-  const memberNav = [{id:"dashboard",icon:"📊",label:"Mon tableau de bord"},{id:"expenses",icon:"💳",label:"Mes dépenses"}];
+  // ── NAV ────────────────────────────────────────────────────────────────────────
+  const adminNav = [
+    {id:"dashboard", icon:"📊", label:"Tableau de bord"},
+    {id:"revenues",  icon:"💰", label:"Virements"},
+    {id:"expenses",  icon:"💳", label:"Dépenses", badge:pendingN},
+    {id:"cats",      icon:"🏷️", label:"Catégories"},
+  ];
+  const memberNav = [
+    {id:"dashboard", icon:"📊", label:"Mon tableau de bord"},
+    {id:"expenses",  icon:"💳", label:"Mes dépenses"},
+  ];
   const nav = isAdmin ? adminNav : memberNav;
 
   return (
     <>
-      {/* TOAST */}
-      {toast && (
-        <div className="toast slide-up" style={{background:toast.color,color:"#fff"}}>
-          {toast.msg}
-        </div>
-      )}
+      {toast && <div className="toast slide-up" style={{background:toast.color}}>{toast.msg}</div>}
+      {loading && <div className="progress-bar"/>}
 
       {/* SIDEBAR */}
       <nav className="sidebar">
-        <div className="sidebar-logo">
-          <h1>💼 ExpensesPro</h1>
-          <p>Gestion des dépenses</p>
-        </div>
-        <div className="sidebar-nav">
+        <div className="sb-logo"><h1>💼 ExpensesPro</h1><p>Caisse & Bancaire</p></div>
+        <div className="sb-nav">
           {nav.map(item=>(
             <div key={item.id} className={`nav-item ${view===item.id?"active":""}`} onClick={()=>setView(item.id)}>
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
-              {item.badge>0 && <span className="badge">{item.badge}</span>}
+              <span style={{fontSize:15,width:18,textAlign:"center"}}>{item.icon}</span>{item.label}
+              {item.badge>0&&<span className="nav-badge">{item.badge}</span>}
             </div>
           ))}
-          {isAdmin && (
-            <div className="nav-item" onClick={exportCSV} style={{marginTop:"auto"}}>
-              <span className="nav-icon">⬇️</span>Export CSV
-            </div>
-          )}
+          {isAdmin&&<>
+            <div className="sb-section">Actions</div>
+            <div className="nav-item" onClick={exportCSV}><span style={{fontSize:15,width:18,textAlign:"center"}}>⬇️</span>Export CSV</div>
+          </>}
         </div>
-        <div className="sidebar-footer">
-          <div className="user-chip">
-            <div className="user-avatar">{currentUser.avatar}</div>
-            <div>
-              <div className="user-name">{currentUser.name}</div>
-              <div className="user-role">{isAdmin?"Admin":"Membre"}</div>
-            </div>
-          </div>
+        <div className="sb-footer">
+          <div className="user-chip"><div className="ua">{currentUser.avatar}</div><div><div className="un">{currentUser.name}</div><div className="ur">{isAdmin?"Admin":"Membre"}</div></div></div>
           <button className="logout-btn" onClick={()=>{localStorage.removeItem("eq_session");setCurrentUser(null);}}>⏏ Déconnexion</button>
         </div>
       </nav>
@@ -532,156 +513,125 @@ function App() {
         {/* ── DASHBOARD ── */}
         {view==="dashboard" && (
           <div className="fade-in">
-            <div className="page-header">
-              <div className="page-title">{isAdmin?"Tableau de bord":"Mon tableau de bord"}</div>
-              <div className="page-sub">{new Date().toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
-            </div>
-
-            {/* Stats */}
-            <div className="stats-grid">
-              <div className="stat-card blue">
-                <div className="stat-label">Total approuvé</div>
-                <div className="stat-value">{fmt(myTotal)}</div>
-                <div className="stat-sub">{approvedExp.length} transaction(s)</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-label">En attente</div>
-                <div className="stat-value" style={{color:"#F59E0B"}}>{fmt(pendingTotal)}</div>
-                <div className="stat-sub">{pendingExp.filter(e=>isAdmin||e.userId===currentUser.id).length} dépense(s) à valider</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-label">{isAdmin?"Membres actifs":"Mes dépenses"}</div>
-                <div className="stat-value" style={{color:"#10B981"}}>{isAdmin?users.filter(u=>u.role==="member").length:myExp.length}</div>
-                <div className="stat-sub">{isAdmin?"dans l'équipe":"soumises au total"}</div>
+            <div className="ph">
+              <div><div className="pt">{isAdmin?"Vue d'ensemble":"Mon tableau de bord"}</div><div className="ps">{new Date().toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div></div>
+              <div style={{display:"flex",gap:10}}>
+                {isAdmin && <button className="btn btn-caisse" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"caisse"}));}}>🏦 Virement Caisse</button>}
+                {isAdmin && <button className="btn btn-banque" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"banque"}));}}>🏛️ Virement Bancaire</button>}
+                {!isAdmin && <button className="btn btn-primary" onClick={()=>setShowExpForm(true)}>+ Nouvelle dépense</button>}
               </div>
             </div>
 
-            {/* Chart + recent */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-              {/* Bar chart */}
-              <div className="card">
-                <div className="card-header" style={{paddingBottom:16}}>
-                  <div className="card-title">Répartition par catégorie</div>
-                </div>
-                <div className="card-body" style={{paddingTop:0}}>
-                  {byCat.length===0 ? (
-                    <div style={{color:"#94A3B8",fontSize:13,textAlign:"center",padding:"20px 0"}}>Aucune dépense approuvée</div>
-                  ) : byCat.map(c=>(
-                    <div key={c.id} className="bar-row">
-                      <div className="bar-label">{c.icon} {c.label}</div>
-                      <div className="bar-track">
-                        <div className="bar-fill" style={{width:`${c.pct}%`,background:c.color}}/>
-                      </div>
-                      <div className="bar-amt">{fmt(c.total)}</div>
-                    </div>
-                  ))}
+            {/* Solde cards */}
+            <div className="solde-grid">
+              {/* Caisse */}
+              <div className="solde-card caisse">
+                <div className="sc-icon caisse">🏦</div>
+                <div className="sc-label">Solde Caisse</div>
+                <div className="sc-value" style={{color:soldes.caisse.solde>=0?"var(--caisse)":"var(--red)"}}>{fmtS(soldes.caisse.solde)}</div>
+                <div className="sc-sub">{soldes.caisse.pending>0?`⏳ ${fmt(soldes.caisse.pending)} en attente`:""}</div>
+                <div className="sc-breakdown">
+                  <div className="sc-br-item"><div className="sc-br-label">Virements</div><div className="sc-br-val" style={{color:"var(--green)"}}>{fmt(soldes.caisse.entrees)}</div></div>
+                  <div className="sc-br-item"><div className="sc-br-label">Dépenses payées</div><div className="sc-br-val" style={{color:"var(--red)"}}>{fmt(soldes.caisse.sorties)}</div></div>
                 </div>
               </div>
-
-              {/* Recent expenses */}
-              <div className="card">
-                <div className="card-header" style={{paddingBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div className="card-title">Dernières dépenses</div>
-                  <button className="btn btn-ghost btn-sm" onClick={()=>setView("expenses")}>Voir tout →</button>
+              {/* Banque */}
+              <div className="solde-card banque">
+                <div className="sc-icon banque">🏛️</div>
+                <div className="sc-label">Solde Bancaire</div>
+                <div className="sc-value" style={{color:soldes.banque.solde>=0?"var(--banque)":"var(--red)"}}>{fmtS(soldes.banque.solde)}</div>
+                <div className="sc-sub">{soldes.banque.pending>0?`⏳ ${fmt(soldes.banque.pending)} en attente`:""}</div>
+                <div className="sc-breakdown">
+                  <div className="sc-br-item"><div className="sc-br-label">Virements</div><div className="sc-br-val" style={{color:"var(--green)"}}>{fmt(soldes.banque.entrees)}</div></div>
+                  <div className="sc-br-item"><div className="sc-br-label">Dépenses payées</div><div className="sc-br-val" style={{color:"var(--red)"}}>{fmt(soldes.banque.sorties)}</div></div>
                 </div>
-                <div className="card-body" style={{paddingTop:0}}>
-                  {(isAdmin?expenses:myExp).slice(0,5).map(exp=>{
-                    const c=getCat(exp.category); const st=STATUS[exp.status]; const u=getUser(exp.userId);
-                    return (
-                      <div key={exp.id} style={{display:"flex",alignItems:"center",gap:12,paddingBottom:12,marginBottom:12,borderBottom:"1px solid #F1F5F9"}}>
-                        <div style={{width:36,height:36,borderRadius:10,background:`${c.color}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{c.icon}</div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13,fontWeight:600,color:"#0F172A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{exp.label}</div>
-                          <div style={{fontSize:11,color:"#94A3B8",marginTop:1}}>{isAdmin&&<span>{u.name} · </span>}{new Date(exp.date).toLocaleDateString("fr-FR")}</div>
-                        </div>
-                        <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{fontSize:13,fontWeight:700,color:c.color}}>{fmt(exp.amount)}</div>
-                          <span className={`badge ${st.cls}`} style={{fontSize:10,marginTop:2}}>{st.label}</span>
-                        </div>
-                      </div>
-                    );
+              </div>
+              {/* Total */}
+              <div className="solde-card total">
+                <div className="sc-icon total">📊</div>
+                <div className="sc-label">Solde Total</div>
+                <div className="sc-value" style={{color:(soldes.caisse.solde+soldes.banque.solde)>=0?"var(--blue-600)":"var(--red)"}}>
+                  {fmtS(soldes.caisse.solde+soldes.banque.solde)}
+                </div>
+                <div className="sc-sub">{pendingN} dépense(s) en attente</div>
+                <div className="sc-breakdown">
+                  <div className="sc-br-item"><div className="sc-br-label">Total virements</div><div className="sc-br-val" style={{color:"var(--green)"}}>{fmt(soldes.caisse.entrees+soldes.banque.entrees)}</div></div>
+                  <div className="sc-br-item"><div className="sc-br-label">Total dépenses</div><div className="sc-br-val" style={{color:"var(--red)"}}>{fmt(soldes.caisse.sorties+soldes.banque.sorties)}</div></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent tables */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
+              <div className="card">
+                <div className="card-hdr"><span className="card-title">Dernières dépenses</span><button className="btn btn-ghost btn-sm" onClick={()=>setView("expenses")}>Voir tout</button></div>
+                <table><tbody>
+                  {myExp.slice(0,6).map(exp=>{
+                    const c=getCat(exp.category); const vt=VTYPES[exp.vtype]||VTYPES.caisse;
+                    return (<tr key={exp.id}>
+                      <td><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:17}}>{c.icon}</span><div><div style={{fontWeight:600,fontSize:12}}>{exp.label}</div><div style={{fontSize:10,color:"var(--gray-400)"}}>{isAdmin&&getUser(exp.userId).name+" · "}{new Date(exp.date).toLocaleDateString("fr-FR")}</div></div></div></td>
+                      <td><span className={`badge ${vt.cls}`}>{vt.icon}</span></td>
+                      <td style={{fontWeight:700,color:c.color,fontSize:12,whiteSpace:"nowrap"}}>{fmt(exp.amount)}</td>
+                      <td><span className={`badge ${exp.status==="paid"?"paid":"pending"}`}>{exp.status==="paid"?"✅ Payée":"⏳ Attente"}</span></td>
+                    </tr>);
                   })}
-                  {(isAdmin?expenses:myExp).length===0&&<div style={{color:"#94A3B8",fontSize:13,textAlign:"center",padding:"20px 0"}}>Aucune dépense</div>}
-                </div>
+                  {myExp.length===0&&<tr><td colSpan="4" style={{textAlign:"center",color:"var(--gray-400)",padding:20,fontSize:12}}>Aucune dépense</td></tr>}
+                </tbody></table>
+              </div>
+              <div className="card">
+                <div className="card-hdr"><span className="card-title">Derniers virements</span>{isAdmin&&<button className="btn btn-ghost btn-sm" onClick={()=>setView("revenues")}>Voir tout</button>}</div>
+                <table><tbody>
+                  {(isAdmin?revenues:revenues.filter(r=>r.userId===currentUser?.id)).slice(0,6).map(rev=>{
+                    const vt=VTYPES[rev.vtype]||VTYPES.caisse; const u=getUser(rev.userId);
+                    return (<tr key={rev.id}>
+                      <td><div><div style={{fontWeight:600,fontSize:12}}>{rev.label}</div><div style={{fontSize:10,color:"var(--gray-400)"}}>{isAdmin&&u.name+" · "}{new Date(rev.date).toLocaleDateString("fr-FR")}</div></div></td>
+                      <td><span className={`badge ${vt.cls}`}>{vt.icon} {vt.label}</span></td>
+                      <td style={{fontWeight:700,color:"var(--green)",fontSize:12,whiteSpace:"nowrap"}}>{fmt(rev.amount)}</td>
+                    </tr>);
+                  })}
+                  {revenues.length===0&&<tr><td colSpan="3" style={{textAlign:"center",color:"var(--gray-400)",padding:20,fontSize:12}}>Aucun virement</td></tr>}
+                </tbody></table>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── EXPENSES ── */}
-        {view==="expenses" && (
+        {/* ── VIREMENTS (admin) ── */}
+        {view==="revenues" && isAdmin && (
           <div className="fade-in">
-            <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div>
-                <div className="page-title">{isAdmin?"Toutes les dépenses":"Mes dépenses"}</div>
-                <div className="page-sub">{visibleExp.length} dépense(s)</div>
+            <div className="ph">
+              <div><div className="pt">Virements</div><div className="ps">{revenues.length} enregistrement(s)</div></div>
+              <div style={{display:"flex",gap:10}}>
+                <button className="btn btn-caisse" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"caisse"}));}}>🏦 + Caisse</button>
+                <button className="btn btn-banque" onClick={()=>{setShowRevForm(true);setRevForm(f=>({...f,vtype:"banque"}));}}>🏛️ + Bancaire</button>
               </div>
-              {!isAdmin && <button className="btn btn-primary" onClick={()=>setShowForm(true)}>+ Nouvelle dépense</button>}
             </div>
-
-            {isAdmin && (
-              <div className="filters">
-                {["all","pending","approved","rejected"].map(s=>(
-                  <button key={s} className={`filter-btn ${filterStatus===s?"active":""}`} onClick={()=>setFilterStatus(s)}>
-                    {s==="all"?"Toutes":STATUS[s].icon+" "+STATUS[s].label}
-                  </button>
-                ))}
-                <select className="filter-select" value={filterMember} onChange={e=>setFilterMember(e.target.value)}>
-                  <option value="all">Tous les membres</option>
-                  {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </div>
-            )}
-
-            <div className="card table-wrap">
+            <div className="filters">
+              {["all","caisse","banque"].map(v=>(
+                <button key={v} className={`filter-btn ${fVtype===v?"active":""}`} onClick={()=>setFVtype(v)}>
+                  {v==="all"?"Tous":VTYPES[v].icon+" "+VTYPES[v].label}
+                </button>
+              ))}
+              <select className="filter-select" value={fMember} onChange={e=>setFMember(e.target.value)}>
+                <option value="all">Tous les membres</option>
+                {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+            <div className="card">
               <table>
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    {isAdmin && <th>Membre</th>}
-                    <th>Catégorie</th>
-                    <th>Date</th>
-                    <th>Montant</th>
-                    <th>Statut</th>
-                    <th></th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Description</th><th>Type</th><th>Membre</th><th>Date</th><th>Montant</th><th></th></tr></thead>
                 <tbody>
-                  {visibleExp.length===0&&<tr><td colSpan="7" style={{textAlign:"center",color:"#94A3B8",padding:"32px"}}>Aucune dépense</td></tr>}
-                  {visibleExp.map(exp=>{
-                    const c=getCat(exp.category); const st=STATUS[exp.status]; const u=getUser(exp.userId);
-                    return (
-                      <tr key={exp.id}>
-                        <td>
-                          <div style={{fontWeight:600,color:"#0F172A"}}>{exp.label}</div>
-                          {exp.note&&<div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>{exp.note}</div>}
-                          {exp.rejectNote&&<div style={{fontSize:11,color:"#EF4444",marginTop:2}}>↩ {exp.rejectNote}</div>}
-                        </td>
-                        {isAdmin&&<td><div style={{display:"flex",alignItems:"center",gap:6}}><span>{u.avatar}</span>{u.name}</div></td>}
-                        <td>
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <span className="cat-dot" style={{background:c.color}}/>
-                            {c.icon} {c.label}
-                          </div>
-                        </td>
-                        <td>{new Date(exp.date).toLocaleDateString("fr-FR")}</td>
-                        <td style={{fontWeight:700,color:c.color}}>{fmt(exp.amount)}</td>
-                        <td><span className={`badge ${st.cls}`}>{st.icon} {st.label}</span></td>
-                        <td>
-                          <div className="row-actions">
-                            {isAdmin&&exp.status==="pending"&&(
-                              <>
-                                <button className="btn btn-approve btn-sm btn-icon" onClick={()=>approve(exp.id)} title="Approuver">✓</button>
-                                <button className="btn btn-reject btn-sm btn-icon" onClick={()=>{setRejectId(exp.id);setRejectNote("");}} title="Refuser">✕</button>
-                              </>
-                            )}
-                            {!isAdmin&&exp.status==="pending"&&(
-                              <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delExp(exp.id)} title="Supprimer">🗑️</button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
+                  {visibleRev.length===0&&<tr><td colSpan="6" style={{textAlign:"center",color:"var(--gray-400)",padding:28}}>Aucun virement</td></tr>}
+                  {visibleRev.map(rev=>{
+                    const vt=VTYPES[rev.vtype]||VTYPES.caisse; const u=getUser(rev.userId);
+                    return (<tr key={rev.id}>
+                      <td><div style={{fontWeight:600}}>{rev.label}</div>{rev.note&&<div style={{fontSize:11,color:"var(--gray-400)"}}>{rev.note}</div>}</td>
+                      <td><span className={`badge ${vt.cls}`}>{vt.icon} {vt.label}</span></td>
+                      <td><div style={{display:"flex",alignItems:"center",gap:6}}>{u.avatar} {u.name}</div></td>
+                      <td style={{fontSize:12}}>{new Date(rev.date).toLocaleDateString("fr-FR")}</td>
+                      <td style={{fontWeight:700,color:"var(--green)"}}>{fmt(rev.amount)}</td>
+                      <td><div className="row-acts"><button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delRevenue(rev.id)}>🗑️</button></div></td>
+                    </tr>);
                   })}
                 </tbody>
               </table>
@@ -689,65 +639,71 @@ function App() {
           </div>
         )}
 
-        {/* ── TEAM ── */}
-        {view==="team" && isAdmin && (
+        {/* ── DÉPENSES ── */}
+        {view==="expenses" && (
           <div className="fade-in">
-            <div className="page-header">
-              <div className="page-title">Équipe</div>
-              <div className="page-sub">{users.filter(u=>u.role==="member").length} membre(s)</div>
+            <div className="ph">
+              <div><div className="pt">{isAdmin?"Dépenses":"Mes dépenses"}</div><div className="ps">{visibleExp.length} dépense(s)</div></div>
+              {!isAdmin && <button className="btn btn-primary" onClick={()=>setShowExpForm(true)}>+ Nouvelle dépense</button>}
             </div>
-            <div className="team-grid">
-              {users.map(u=>{
-                const uExp=expenses.filter(e=>e.userId===u.id);
-                const uApp=uExp.filter(e=>e.status==="approved").reduce((s,e)=>s+e.amount,0);
-                const uPnd=uExp.filter(e=>e.status==="pending").length;
-                return (
-                  <div key={u.id} className="team-card">
-                    <div className="team-avatar">{u.avatar}</div>
-                    <div className="team-name">{u.name}</div>
-                    <div className="team-role">{u.role==="admin"?"Administrateur":"Membre"}</div>
-                    <div className="team-stat">
-                      <div>
-                        <div className="team-stat-val">{fmt(uApp)}</div>
-                        <div className="team-stat-label">Approuvé</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:14,fontWeight:700,color:uPnd>0?"#F59E0B":"#94A3B8"}}>{uPnd}</div>
-                        <div className="team-stat-label">En attente</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="filters">
+              <button className={`filter-btn ${fStatus==="all"?"active":""}`} onClick={()=>setFStatus("all")}>Toutes</button>
+              <button className={`filter-btn ${fStatus==="pending"?"active":""}`} onClick={()=>setFStatus("pending")}>⏳ En attente</button>
+              <button className={`filter-btn ${fStatus==="paid"?"active":""}`} onClick={()=>setFStatus("paid")}>✅ Payées</button>
+              <button className={`filter-btn ${fVtype==="caisse"?"active":""}`} onClick={()=>setFVtype(fVtype==="caisse"?"all":"caisse")}>🏦 Caisse</button>
+              <button className={`filter-btn ${fVtype==="banque"?"active":""}`} onClick={()=>setFVtype(fVtype==="banque"?"all":"banque")}>🏛️ Bancaire</button>
+              {isAdmin && <select className="filter-select" value={fMember} onChange={e=>setFMember(e.target.value)}>
+                <option value="all">Tous les membres</option>
+                {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>}
+            </div>
+            <div className="card">
+              <table>
+                <thead><tr><th>Description</th>{isAdmin&&<th>Membre</th>}<th>Catégorie</th><th>Type</th><th>Date</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
+                <tbody>
+                  {visibleExp.length===0&&<tr><td colSpan="8" style={{textAlign:"center",color:"var(--gray-400)",padding:28}}>Aucune dépense</td></tr>}
+                  {visibleExp.map(exp=>{
+                    const c=getCat(exp.category); const vt=VTYPES[exp.vtype]||VTYPES.caisse; const u=getUser(exp.userId);
+                    return (<tr key={exp.id}>
+                      <td><div style={{fontWeight:600}}>{exp.label}</div>{exp.note&&<div style={{fontSize:11,color:"var(--gray-400)"}}>{exp.note}</div>}</td>
+                      {isAdmin&&<td><div style={{display:"flex",alignItems:"center",gap:6,fontSize:12}}>{u.avatar} {u.name}</div></td>}
+                      <td><div style={{display:"flex",alignItems:"center",gap:5,fontSize:12}}><span style={{width:7,height:7,borderRadius:"50%",background:c.color,display:"inline-block"}}/>{c.icon} {c.label}</div></td>
+                      <td><span className={`badge ${vt.cls}`}>{vt.icon} {vt.label}</span></td>
+                      <td style={{fontSize:12}}>{new Date(exp.date).toLocaleDateString("fr-FR")}</td>
+                      <td style={{fontWeight:700,color:c.color,fontSize:13}}>{fmt(exp.amount)}</td>
+                      <td><span className={`badge ${exp.status==="paid"?"paid":"pending"}`}>{exp.status==="paid"?"✅ Payée":"⏳ En attente"}</span></td>
+                      <td><div className="row-acts">
+                        {isAdmin&&exp.status==="pending"&&<button className="btn btn-pay" onClick={()=>markPaid(exp.id)} disabled={loading}>✓ Payer</button>}
+                        {!isAdmin&&exp.status==="pending"&&<button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delExpense(exp.id)} disabled={loading}>🗑️</button>}
+                      </div></td>
+                    </tr>);
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        {/* ── CATEGORIES ── */}
+        {/* ── CATÉGORIES (admin) ── */}
         {view==="cats" && isAdmin && (
           <div className="fade-in">
-            <div className="page-header" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div>
-                <div className="page-title">Catégories</div>
-                <div className="page-sub">{categories.length} catégorie(s)</div>
-              </div>
+            <div className="ph">
+              <div><div className="pt">Catégories de dépenses</div></div>
               <button className="btn btn-primary" onClick={()=>{setEditingCat({id:null,label:"",icon:"📦",color:COLORS[0]});setIconOpen(false);}}>+ Nouvelle</button>
             </div>
-            <div className="card table-wrap">
+            <div className="card">
               <table>
                 <thead><tr><th>Catégorie</th><th>Couleur</th><th>Dépenses</th><th></th></tr></thead>
                 <tbody>
                   {categories.map(c=>(
                     <tr key={c.id}>
-                      <td><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20}}>{c.icon}</span><span style={{fontWeight:600}}>{c.label}</span></div></td>
-                      <td><span className="cat-dot" style={{background:c.color,width:16,height:16,display:"inline-block"}}/></td>
-                      <td>{expenses.filter(e=>e.category===c.id).length}</td>
-                      <td>
-                        <div className="row-actions">
-                          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>{setEditingCat({...c});setIconOpen(false);}}>✏️</button>
-                          {c.id!=="other"&&<button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delCat(c.id)}>🗑️</button>}
-                        </div>
-                      </td>
+                      <td><div style={{display:"flex",alignItems:"center",gap:9}}><span style={{fontSize:19}}>{c.icon}</span><span style={{fontWeight:600}}>{c.label}</span></div></td>
+                      <td><div style={{width:14,height:14,borderRadius:"50%",background:c.color}}/></td>
+                      <td style={{fontSize:12,color:"var(--gray-500)"}}>{expenses.filter(e=>e.category===c.id).length}</td>
+                      <td><div className="row-acts">
+                        <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>{setEditingCat({...c});setIconOpen(false);}}>✏️</button>
+                        {c.id!=="other"&&<button className="btn btn-ghost btn-sm btn-icon" onClick={async()=>{const u=categories.filter(x=>x.id!==c.id);setCategories(u);await FB.setCats(u).catch(()=>{});}}>🗑️</button>}
+                      </div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -757,100 +713,120 @@ function App() {
         )}
       </main>
 
-      {/* FAB member */}
-      {!isAdmin && view==="expenses" && (
-        <button className="fab" onClick={()=>setShowForm(true)}>+</button>
-      )}
-
-      {/* SYNC BAR */}
-      <div id="sync-bar">
-        <span className="sync-dot"/>
-        Firebase · Temps réel · <span id="sync-time">en attente...</span>
-      </div>
-
-      {/* ── ADD EXPENSE MODAL ── */}
-      {showForm && !isAdmin && (
-        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowForm(false)}>
+      {/* ── AJOUTER DÉPENSE ── */}
+      {showExpForm && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowExpForm(false)}>
           <div className="modal pop">
-            <div className="modal-title">Nouvelle dépense</div>
+            <div className="modal-title">💳 Nouvelle dépense</div>
             <div className="form-group">
-              <label className="form-label">Description</label>
-              <input className="form-input" placeholder="Ex: Repas client, Carburant..." value={form.label} onChange={e=>setForm(f=>({...f,label:e.target.value}))}/>
+              <label className="form-label">Type de paiement</label>
+              <div className="type-selector">
+                {Object.entries(VTYPES).map(([k,vt])=>(
+                  <div key={k} className={`type-btn ${k} ${expForm.vtype===k?"selected":""}`} onClick={()=>setExpForm(f=>({...f,vtype:k}))}>
+                    <div className="type-icon">{vt.icon}</div>
+                    <div className="type-label">{vt.label}</div>
+                    <div className="type-sub">{k==="caisse"?"Paiement en espèces":"Virement bancaire"}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="form-group"><label className="form-label">Description</label>
+              <input className="form-input" placeholder="Ex: Carburant, Repas..." value={expForm.label} onChange={e=>setExpForm(f=>({...f,label:e.target.value}))}/>
             </div>
             <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Montant (DA)</label>
-                <input className="form-input" type="number" placeholder="0" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}/>
+              <div className="form-group"><label className="form-label">Montant (DA)</label>
+                <input className="form-input" type="number" placeholder="0" value={expForm.amount} onChange={e=>setExpForm(f=>({...f,amount:e.target.value}))}/>
               </div>
-              <div className="form-group">
-                <label className="form-label">Date</label>
-                <input className="form-input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/>
+              <div className="form-group"><label className="form-label">Date</label>
+                <input className="form-input" type="date" value={expForm.date} onChange={e=>setExpForm(f=>({...f,date:e.target.value}))}/>
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Catégorie</label>
-              <select className="form-input" value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+            <div className="form-group"><label className="form-label">Catégorie</label>
+              <select className="form-input" value={expForm.category} onChange={e=>setExpForm(f=>({...f,category:e.target.value}))}>
                 {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
               </select>
             </div>
-            <div className="form-group">
-              <label className="form-label">Justificatif / Note (optionnel)</label>
-              <input className="form-input" placeholder="Précisions supplémentaires..." value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}/>
+            <div className="form-group"><label className="form-label">Note (optionnel)</label>
+              <input className="form-input" placeholder="Précisions..." value={expForm.note} onChange={e=>setExpForm(f=>({...f,note:e.target.value}))}/>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={()=>setShowForm(false)}>Annuler</button>
-              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={addExpense}>Soumettre pour validation →</button>
+              <button className="btn btn-ghost" onClick={()=>setShowExpForm(false)}>Annuler</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={addExpense} disabled={loading}>{loading?"Envoi...":"Soumettre →"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── REJECT MODAL ── */}
-      {rejectId && (
-        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setRejectId(null)}>
-          <div className="modal pop" style={{maxWidth:400}}>
-            <div className="modal-title" style={{color:"#EF4444"}}>Refuser la dépense</div>
-            <div className="form-group">
-              <label className="form-label">Motif du refus</label>
-              <textarea className="form-input" rows={3} placeholder="Expliquez la raison du refus..." value={rejectNote} onChange={e=>setRejectNote(e.target.value)} style={{resize:"none"}}/>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={()=>setRejectId(null)}>Annuler</button>
-              <button className="btn" style={{background:"#EF4444",color:"#fff",flex:1,justifyContent:"center"}} onClick={()=>reject(rejectId)}>Confirmer le refus</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── CATEGORY EDITOR ── */}
-      {editingCat && (
-        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&(setEditingCat(null),setIconOpen(false))}>
+      {/* ── AJOUTER VIREMENT (admin) ── */}
+      {showRevForm && isAdmin && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowRevForm(false)}>
           <div className="modal pop">
-            <div className="modal-title">{editingCat.id?"Modifier la catégorie":"Nouvelle catégorie"}</div>
+            <div className="modal-title">💰 Enregistrer un virement</div>
             <div className="form-group">
-              <label className="form-label">Icône</label>
-              <button onClick={()=>setIconOpen(o=>!o)} style={{background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:8,padding:"8px 14px",fontSize:20,display:"flex",alignItems:"center",gap:8,color:"#475569",cursor:"pointer"}}>
-                {editingCat.icon} <span style={{fontSize:12,color:"#94A3B8"}}>Choisir ▾</span>
+              <label className="form-label">Type de virement</label>
+              <div className="type-selector">
+                {Object.entries(VTYPES).map(([k,vt])=>(
+                  <div key={k} className={`type-btn ${k} ${revForm.vtype===k?"selected":""}`} onClick={()=>setRevForm(f=>({...f,vtype:k}))}>
+                    <div className="type-icon">{vt.icon}</div>
+                    <div className="type-label">{vt.label}</div>
+                    <div className="type-sub">{k==="caisse"?"Alimenter la caisse":"Alimenter le compte banque"}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="form-group"><label className="form-label">Membre concerné</label>
+              <select className="form-input" value={revForm.userId} onChange={e=>setRevForm(f=>({...f,userId:e.target.value}))}>
+                {users.filter(u=>u.role==="member").map(u=><option key={u.id} value={u.id}>{u.avatar} {u.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label className="form-label">Description</label>
+              <input className="form-input" placeholder="Ex: Dotation Caisse Mars, Virement salaire..." value={revForm.label} onChange={e=>setRevForm(f=>({...f,label:e.target.value}))}/>
+            </div>
+            <div className="form-row">
+              <div className="form-group"><label className="form-label">Montant (DA)</label>
+                <input className="form-input" type="number" placeholder="0" value={revForm.amount} onChange={e=>setRevForm(f=>({...f,amount:e.target.value}))}/>
+              </div>
+              <div className="form-group"><label className="form-label">Date</label>
+                <input className="form-input" type="date" value={revForm.date} onChange={e=>setRevForm(f=>({...f,date:e.target.value}))}/>
+              </div>
+            </div>
+            <div className="form-group"><label className="form-label">Note (optionnel)</label>
+              <input className="form-input" placeholder="Précisions..." value={revForm.note} onChange={e=>setRevForm(f=>({...f,note:e.target.value}))}/>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={()=>setShowRevForm(false)}>Annuler</button>
+              <button className={`btn ${revForm.vtype==="caisse"?"btn-caisse":"btn-banque"}`} style={{flex:1,justifyContent:"center"}} onClick={addRevenue} disabled={loading}>
+                {loading?"Envoi...":VTYPES[revForm.vtype].icon+" Enregistrer"}
               </button>
-              {iconOpen && (
-                <div className="icon-grid" style={{marginTop:8}}>
-                  {ICONS.map(ic=><button key={ic} className={`icon-btn ${editingCat.icon===ic?"selected":""}`} onClick={()=>{setEditingCat(e=>({...e,icon:ic}));setIconOpen(false);}}>{ic}</button>)}
-                </div>
-              )}
             </div>
-            <div className="form-group">
-              <label className="form-label">Nom</label>
-              <input className="form-input" placeholder="Nom de la catégorie..." value={editingCat.label} onChange={e=>setEditingCat(ec=>({...ec,label:e.target.value}))}/>
+          </div>
+        </div>
+      )}
+
+      {/* ── CATÉGORIE EDITOR ── */}
+      {editingCat && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&(setEditingCat(null),setIconOpen(false))}>
+          <div className="modal pop">
+            <div className="modal-title">{editingCat.id?"Modifier":"Nouvelle catégorie"}</div>
+            <div className="form-group"><label className="form-label">Icône</label>
+              <button onClick={()=>setIconOpen(o=>!o)} style={{background:"var(--gray-50)",border:"1.5px solid var(--gray-200)",borderRadius:8,padding:"7px 12px",fontSize:19,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                {editingCat.icon} <span style={{fontSize:11,color:"var(--gray-400)"}}>Choisir ▾</span>
+              </button>
+              {iconOpen&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:7,background:"var(--gray-50)",borderRadius:8,padding:8,maxHeight:130,overflowY:"auto"}}>
+                {ICONS.map(ic=><button key={ic} onClick={()=>{setEditingCat(e=>({...e,icon:ic}));setIconOpen(false);}} style={{fontSize:19,padding:"5px 7px",borderRadius:6,cursor:"pointer",background:editingCat.icon===ic?"var(--blue-100)":"none",border:"none"}}>{ic}</button>)}
+              </div>}
             </div>
-            <div className="form-group">
-              <label className="form-label">Couleur</label>
-              <div className="color-grid">
-                {COLORS.map(col=><div key={col} className={`color-swatch ${editingCat.color===col?"selected":""}`} style={{background:col}} onClick={()=>setEditingCat(ec=>({...ec,color:col}))}/>)}
+            <div className="form-group"><label className="form-label">Nom</label>
+              <input className="form-input" placeholder="Nom..." value={editingCat.label} onChange={e=>setEditingCat(ec=>({...ec,label:e.target.value}))}/>
+            </div>
+            <div className="form-group"><label className="form-label">Couleur</label>
+              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                {COLORS.map(col=><div key={col} onClick={()=>setEditingCat(ec=>({...ec,color:col}))} style={{width:24,height:24,borderRadius:"50%",background:col,cursor:"pointer",border:editingCat.color===col?"3px solid var(--gray-900)":"2px solid transparent",transition:"all .15s"}}/>)}
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={()=>{setEditingCat(null);setIconOpen(false);}}>Annuler</button>
-              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={saveCat}>{editingCat.id?"Enregistrer":"Créer la catégorie"}</button>
+              <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={saveCat}>{editingCat.id?"Enregistrer":"Créer"}</button>
             </div>
           </div>
         </div>
