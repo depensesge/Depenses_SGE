@@ -197,6 +197,30 @@
     .toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--gray-9); color:#fff; padding:9px 16px; border-radius:99px; font-size:12px; font-weight:500; z-index:999; white-space:nowrap; box-shadow:var(--shadow-lg); }
     .loadbar { position:fixed; top:0; left:0; right:0; height:2px; background:var(--blue); z-index:999; }
 
+    /* RAPPORT */
+    .rapport-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+    .rp-card { background:#fff; border-radius:var(--r-lg); padding:14px 16px; box-shadow:var(--shadow); border-top:3px solid var(--gray-3); cursor:pointer; transition:all .15s; }
+    .rp-card:hover { box-shadow:var(--shadow-md); }
+    .rp-card.sel { border-color:var(--blue); background:var(--blue-l); }
+    .rp-lbl { font-size:10px; font-weight:700; color:var(--gray-5); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px; }
+    .rp-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:800; color:var(--gray-9); }
+    .rp-sub { font-size:10px; color:var(--gray-5); margin-top:3px; }
+    .rp-card.sel .rp-lbl { color:var(--blue-d); }
+    .rp-card.sel .rp-val { color:var(--blue-d); }
+    .rp-table { background:#fff; border-radius:var(--r-lg); box-shadow:var(--shadow); overflow:hidden; margin-bottom:14px; }
+    .rp-thead { display:grid; padding:9px 14px; background:var(--gray-1); border-bottom:1px solid var(--gray-2); font-size:10px; font-weight:700; color:var(--gray-5); text-transform:uppercase; letter-spacing:.06em; }
+    .rp-row { display:grid; padding:11px 14px; border-bottom:1px solid var(--gray-1); font-size:12px; color:var(--gray-7); align-items:center; }
+    .rp-row:last-child { border-bottom:none; }
+    .rp-row:hover { background:var(--gray-1); }
+    .rp-cols-exp { grid-template-columns:1fr 110px 100px 90px; }
+    .rp-cols-cat { grid-template-columns:1fr 80px 90px; }
+    .rp-total { display:flex; justify-content:space-between; align-items:center; padding:11px 14px; background:var(--gray-1); border-top:2px solid var(--gray-2); font-size:13px; font-weight:700; color:var(--gray-9); }
+    .period-nav { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+    .period-label { font-size:13px; font-weight:700; color:var(--gray-9); flex:1; text-align:center; }
+    .period-btn { background:#fff; border:1.5px solid var(--gray-3); border-radius:8px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition:all .15s; }
+    .period-btn:hover { border-color:var(--blue); color:var(--blue); }
+    @media(max-width:600px) { .rapport-grid { grid-template-columns:1fr 1fr; } .rp-cols-exp { grid-template-columns:1fr 90px 80px; } }
+
     /* SYNC */
     #syncbar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--gray-2); padding:4px 14px; font-size:10px; color:var(--gray-5); display:flex; align-items:center; gap:5px; z-index:40; }
     .sdot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
@@ -331,6 +355,217 @@ function PieChart({ expenses, title }) {
   );
 }
 
+// ── Rapport Component ────────────────────────────────────────────────────────
+function RapportView({ expenses, virements, isAdmin, user, rpPeriod, setRpPeriod, rpOffset, setRpOffset, fmt, fmtS }) {
+  const today = new Date();
+
+  function getPeriodRange(period, offset) {
+    const d = new Date(today);
+    let start, end, label;
+    if (period === "quotidien") {
+      d.setDate(d.getDate() + offset);
+      start = new Date(d); start.setHours(0,0,0,0);
+      end   = new Date(d); end.setHours(23,59,59,999);
+      label = d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+      label = label.charAt(0).toUpperCase()+label.slice(1);
+    } else if (period === "hebdo") {
+      const day = d.getDay()||7;
+      d.setDate(d.getDate() - day + 1 + offset*7);
+      start = new Date(d); start.setHours(0,0,0,0);
+      end   = new Date(start); end.setDate(end.getDate()+6); end.setHours(23,59,59,999);
+      label = "Semaine du "+start.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})+" au "+end.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
+    } else if (period === "mensuel") {
+      const y = today.getFullYear(), m = today.getMonth() + offset;
+      start = new Date(y, m, 1);
+      end   = new Date(y, m+1, 0, 23, 59, 59);
+      label = start.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+      label = label.charAt(0).toUpperCase()+label.slice(1);
+    } else {
+      const y = today.getFullYear() + offset;
+      start = new Date(y, 0, 1);
+      end   = new Date(y, 11, 31, 23, 59, 59);
+      label = "Année "+y;
+    }
+    return { start, end, label };
+  }
+
+  const { start, end, label } = getPeriodRange(rpPeriod, rpOffset);
+
+  const inPeriod = e => {
+    const d = new Date((e.date||"")+"T00:00:00");
+    return d >= start && d <= end;
+  };
+
+  const srcExp = (isAdmin ? expenses : expenses.filter(e=>e.userId===user?.id)).filter(inPeriod);
+  const srcVir = (isAdmin ? virements : virements.filter(v=>v.toUserId===user?.id)).filter(inPeriod);
+
+  const totalExp = srcExp.reduce((s,e)=>s+(e.amount||0),0);
+  const totalVir = srcVir.reduce((s,v)=>s+(v.amount||0),0);
+  const totalC   = srcVir.filter(v=>v.vtype==="caisse").reduce((s,v)=>s+(v.amount||0),0);
+  const totalB   = srcVir.filter(v=>v.vtype==="banque").reduce((s,v)=>s+(v.amount||0),0);
+  const solde    = totalVir - totalExp;
+
+  const byCat = CATS.map(c=>({
+    ...c, total: srcExp.filter(e=>e.cat===c.id).reduce((s,e)=>s+(e.amount||0),0)
+  })).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+
+  const byMember = USERS.filter(u=>u.role==="member").map(u=>({
+    ...u,
+    dep: srcExp.filter(e=>e.userId===u.id).reduce((s,e)=>s+(e.amount||0),0),
+    vir: srcVir.filter(v=>v.toUserId===u.id).reduce((s,v)=>s+(v.amount||0),0),
+  })).filter(u=>u.dep>0||u.vir>0).sort((a,b)=>b.dep-a.dep);
+
+  function exportRapport() {
+    const rows = [
+      ["Rapport — "+label],
+      [],
+      ["RÉSUMÉ"],
+      ["Virements Caisse", totalC+" DA"],
+      ["Virements Bancaire", totalB+" DA"],
+      ["Total Virements", totalVir+" DA"],
+      ["Total Dépenses", totalExp+" DA"],
+      ["Solde", solde+" DA"],
+      [],
+      ["DÉPENSES PAR CATÉGORIE"],
+      ["Catégorie","Montant (DA)","%"],
+      ...byCat.map(c=>[c.label, c.total, totalExp>0?((c.total/totalExp)*100).toFixed(1)+"%":"0%"]),
+      [],
+      ...(isAdmin ? [
+        ["PAR MEMBRE"],
+        ["Membre","Dépenses","Virements reçus","Solde"],
+        ...byMember.map(u=>[u.name, u.dep, u.vir, u.vir-u.dep]),
+        [],
+      ] : []),
+      ["DÉTAIL DÉPENSES"],
+      ["Date","Membre","Description","Catégorie","Montant (DA)"],
+      ...[...srcExp].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(e=>{
+        const u=getUser(e.userId), c=getCat(e.cat);
+        return [e.date, u.name, '"'+(e.label||"").replace(/"/g,'""')+'"', c.label, e.amount||0];
+      }),
+    ];
+    const csv = "﻿"+rows.map(r=>r.join(";")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+    const a = document.createElement("a"); a.href=url; a.download="rapport_"+label.replace(/[^a-z0-9]/gi,"_")+".csv"; a.click(); URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="fade">
+      {/* Sélecteur période */}
+      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        {[["quotidien","Jour"],["hebdo","Semaine"],["mensuel","Mois"],["annuel","Année"]].map(([k,lb])=>(
+          <button key={k} className={"chip"+(rpPeriod===k?" on":"")} onClick={()=>{setRpPeriod(k);setRpOffset(0);}}>
+            {lb}
+          </button>
+        ))}
+        <button className="btn btn-ghost btn-sm" style={{marginLeft:"auto"}} onClick={exportRapport}>⬇ CSV</button>
+      </div>
+
+      {/* Navigation */}
+      <div className="period-nav">
+        <button className="period-btn" onClick={()=>setRpOffset(o=>o-1)}>‹</button>
+        <div className="period-label">{label}</div>
+        <button className="period-btn" onClick={()=>setRpOffset(o=>Math.min(o+1,0))} style={{opacity:rpOffset>=0?0.3:1}} disabled={rpOffset>=0}>›</button>
+      </div>
+
+      {/* Résumé 4 cartes */}
+      <div className="rapport-grid">
+        <div className="rp-card sel">
+          <div className="rp-lbl">💸 Virements</div>
+          <div className="rp-val">{fmt(totalVir)}</div>
+          <div className="rp-sub">🏦 {fmt(totalC)} · 🏛️ {fmt(totalB)}</div>
+        </div>
+        <div className="rp-card">
+          <div className="rp-lbl">💳 Dépenses</div>
+          <div className="rp-val" style={{color:"var(--red)"}}>{fmt(totalExp)}</div>
+          <div className="rp-sub">{srcExp.length} transaction(s)</div>
+        </div>
+        <div className="rp-card">
+          <div className="rp-lbl">📊 Solde</div>
+          <div className="rp-val" style={{color:solde>=0?"var(--green)":"var(--red)"}}>{fmtS(solde)}</div>
+          <div className="rp-sub">Virements − Dépenses</div>
+        </div>
+        <div className="rp-card">
+          <div className="rp-lbl">📋 Transactions</div>
+          <div className="rp-val">{srcExp.length+srcVir.length}</div>
+          <div className="rp-sub">{srcExp.length} dép. · {srcVir.length} vir.</div>
+        </div>
+      </div>
+
+      {/* Par catégorie */}
+      {byCat.length > 0 && (
+        <>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--gray-5)",textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>Dépenses par catégorie</div>
+          <div className="rp-table">
+            <div className="rp-thead rp-cols-cat"><span>Catégorie</span><span style={{textAlign:"right"}}>%</span><span style={{textAlign:"right"}}>Montant</span></div>
+            {byCat.map(c=>(
+              <div key={c.id} className="rp-row rp-cols-cat">
+                <span style={{display:"flex",alignItems:"center",gap:7}}>
+                  <span style={{width:8,height:8,borderRadius:"50%",background:c.color,display:"inline-block",flexShrink:0}}/>
+                  {c.icon} {c.label}
+                </span>
+                <span style={{textAlign:"right",color:"var(--gray-5)"}}>{totalExp>0?((c.total/totalExp)*100).toFixed(1):0}%</span>
+                <span style={{textAlign:"right",fontWeight:700,color:c.color}}>{fmt(c.total)}</span>
+              </div>
+            ))}
+            <div className="rp-total"><span>Total</span><span style={{color:"var(--red)"}}>{fmt(totalExp)}</span></div>
+          </div>
+        </>
+      )}
+
+      {/* Par membre (admin) */}
+      {isAdmin && byMember.length > 0 && (
+        <>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--gray-5)",textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>Par membre</div>
+          <div className="rp-table">
+            <div className="rp-thead" style={{gridTemplateColumns:"1fr 110px 110px 90px"}}>
+              <span>Membre</span><span style={{textAlign:"right"}}>Virements</span><span style={{textAlign:"right"}}>Dépenses</span><span style={{textAlign:"right"}}>Solde</span>
+            </div>
+            {byMember.map(u=>(
+              <div key={u.id} className="rp-row" style={{gridTemplateColumns:"1fr 110px 110px 90px"}}>
+                <span>{u.avatar} {u.name}</span>
+                <span style={{textAlign:"right",color:"var(--green)",fontWeight:600}}>{fmt(u.vir)}</span>
+                <span style={{textAlign:"right",color:"var(--red)",fontWeight:600}}>{fmt(u.dep)}</span>
+                <span style={{textAlign:"right",fontWeight:700,color:(u.vir-u.dep)>=0?"var(--green)":"var(--red)"}}>{fmtS(u.vir-u.dep)}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Détail dépenses */}
+      {srcExp.length > 0 && (
+        <>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--gray-5)",textTransform:"uppercase",letterSpacing:".07em",marginBottom:8}}>Détail des dépenses</div>
+          <div className="rp-table">
+            <div className="rp-thead" style={{gridTemplateColumns:"1fr"+(isAdmin?" 90px":"")+" 100px 90px"}}>
+              <span>Description</span>{isAdmin&&<span>Membre</span>}<span style={{textAlign:"right"}}>Catégorie</span><span style={{textAlign:"right"}}>Montant</span>
+            </div>
+            {[...srcExp].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(e=>{
+              const c=getCat(e.cat), u=getUser(e.userId);
+              return (
+                <div key={e.id} className="rp-row" style={{gridTemplateColumns:"1fr"+(isAdmin?" 90px":"")+" 100px 90px"}}>
+                  <span>
+                    <div style={{fontWeight:600,fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{e.label}</div>
+                    <div style={{fontSize:10,color:"var(--gray-5)",marginTop:1}}>{new Date(e.date+"T00:00:00").toLocaleDateString("fr-FR")}</div>
+                  </span>
+                  {isAdmin && <span style={{fontSize:11,color:"var(--gray-5)"}}>{u.avatar} {u.name}</span>}
+                  <span style={{textAlign:"right",fontSize:11}}>{c.icon} {c.label}</span>
+                  <span style={{textAlign:"right",fontWeight:700,color:c.color}}>{fmt(e.amount)}</span>
+                </div>
+              );
+            })}
+            <div className="rp-total"><span>Total</span><span style={{color:"var(--red)"}}>{fmt(totalExp)}</span></div>
+          </div>
+        </>
+      )}
+
+      {srcExp.length===0 && srcVir.length===0 && (
+        <div className="empty"><div style={{fontSize:32,marginBottom:8}}>📭</div><div style={{fontSize:13}}>Aucune donnée pour cette période</div></div>
+      )}
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 function App() {
   const [user,      setUser]      = useState(()=>{ try{const s=localStorage.getItem("dp_s");return s?JSON.parse(s):null;}catch{return null;} });
@@ -345,6 +580,8 @@ function App() {
   const [filterCat, setFilterCat] = useState("all");
   const [selMember, setSelMember] = useState(null);
   const [showExp,   setShowExp]   = useState(false);
+  const [rpPeriod,  setRpPeriod]  = useState("mensuel"); // quotidien|hebdo|mensuel|annuel
+  const [rpOffset,  setRpOffset]  = useState(0); // 0=current, -1=previous, etc.
   const [showVir,   setShowVir]   = useState(false);
   const [expForm,   setExpForm]   = useState({label:"",amount:"",cat:"siege",date:new Date().toISOString().slice(0,10),note:""});
   const [virForm,   setVirForm]   = useState({label:"",amount:"",vtype:"caisse",toUserId:"u1",date:new Date().toISOString().slice(0,10),note:""});
@@ -602,6 +839,9 @@ function App() {
         <button className={"tab"+(tab==="virements"?" on":"")} onClick={()=>setTab("virements")}>
           💸 Virements ({myVir.length})
         </button>
+        <button className={"tab"+(tab==="rapport"?" on":"")} onClick={()=>setTab("rapport")}>
+          📊 Rapport
+        </button>
       </div>
 
       {/* DÉPENSES */}
@@ -695,6 +935,10 @@ function App() {
         </div>
       )}
 
+      {/* RAPPORT */}
+      {tab==="rapport" && RapportView({
+        expenses, virements, isAdmin, user, rpPeriod, setRpPeriod, rpOffset, setRpOffset, fmt, fmtS
+      })}
       {/* FORM DÉPENSE */}
       {showExp && (
         <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowExp(false)}>
