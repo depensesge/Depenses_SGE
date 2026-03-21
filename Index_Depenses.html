@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>Dépenses Équipe SGE</title>
+  <title>Dépenses Équipe</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script>
     firebase.initializeApp({
       apiKey: "AIzaSyDOG7S4hWibxGwVBe59ybUmGuJ0r-tnZxI",
@@ -234,14 +235,16 @@
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
 
+// UID Firebase → profil utilisateur
 const USERS = [
-  { id:"admin",  name:"Administrateur", role:"admin",  pw:"admin2026", avatar:"👑" },
-  { id:"u1",     name:"Youcef",         role:"member", pw:"y123",      avatar:"🧑" },
-  { id:"u2",     name:"Souad",          role:"member", pw:"s123",      avatar:"👩" },
-  { id:"u3",     name:"Belmahi",        role:"member", pw:"b123",      avatar:"🧑" },
-  { id:"u4",     name:"Tariq",          role:"member", pw:"t123",      avatar:"🧑" },
-  { id:"u5",     name:"Amine",          role:"member", pw:"a123",      avatar:"🧑" },
+  { id:"AyUDkkALx2VL3lYLjXM78ObC3pW2",  name:"Administrateur", role:"admin",  avatar:"👑" },
+  { id:"VYsJjyX3oWZ9GyYM2UiNE3EQtgo2",  name:"Youcef",         role:"member", avatar:"🧑" },
+  { id:"uCMV8C2hCMOfbE0xLiIbBT4wtFx1",  name:"Souad",          role:"member", avatar:"🧑" },
+  { id:"N5TcBGPnHVNNbjomO4QC3hNnFV92",  name:"Belmahi",        role:"member", avatar:"🧑" },
+  { id:"VgphJTyk2ccKGLtDEkWfZkE5cvv2",  name:"Tariq",          role:"member", avatar:"🧑" },
+  { id:"CaJyvSmBrEWD2DAB83sLa586lP42",  name:"Amine",          role:"member", avatar:"🧑" },
 ];
+function getUserByUID(uid) { return USERS.find(u=>u.id===uid)||null; }
 
 const CATS = [
   { id:"siege",       label:"Frais Siège",   icon:"🏢", color:"#2563EB" },
@@ -570,10 +573,12 @@ function RapportView({ expenses, virements, isAdmin, user, rpPeriod, setRpPeriod
 
 // ── App ───────────────────────────────────────────────────────────────────────
 function App() {
-  const [user,      setUser]      = useState(()=>{ try{const s=localStorage.getItem("dp_s");return s?JSON.parse(s):null;}catch{return null;} });
-  const [loginStep, setLoginStep] = useState(null);
+  const [user,      setUser]      = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [email,     setEmail]     = useState("");
   const [pw,        setPw]        = useState("");
-  const [pwErr,     setPwErr]     = useState(false);
+  const [pwErr,     setPwErr]     = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
   const [expenses,  setExpenses]  = useState([]);
   const [virements, setVirements] = useState([]);
   const [loading,   setLoading]   = useState(false);
@@ -596,6 +601,21 @@ function App() {
       setExpenses(exps); setVirements(virs);
       setSyncUI(true,"Synchronisé · "+new Date().toLocaleTimeString("fr-FR"));
     } catch { setSyncUI(false,"Erreur de connexion"); }
+  },[]);
+
+  // Firebase Auth listener
+  useEffect(()=>{
+    const unsub = firebase.auth().onAuthStateChanged(firebaseUser => {
+      if (firebaseUser) {
+        const profile = getUserByUID(firebaseUser.uid);
+        if (profile) { setUser({...profile, firebaseUid: firebaseUser.uid, email: firebaseUser.email}); }
+        else { firebase.auth().signOut(); setUser(null); }
+      } else {
+        setUser(null);
+      }
+      setAuthReady(true);
+    });
+    return () => unsub();
   },[]);
 
   useEffect(()=>{
@@ -673,46 +693,70 @@ function App() {
     const a=document.createElement("a"); a.href=url; a.download="finances.csv"; a.click(); URL.revokeObjectURL(url);
   }
 
-  function doLogin() {
-    if(pw===loginStep.pw) {
-      localStorage.setItem("dp_s",JSON.stringify(loginStep));
-      setUser(loginStep); setLoginStep(null); setPw(""); setPwErr(false);
-    } else { setPwErr(true); setPw(""); }
+  async function doLogin() {
+    if (!email || !pw) { setPwErr("Remplissez tous les champs."); return; }
+    setPwLoading(true); setPwErr("");
+    try {
+      await firebase.auth().signInWithEmailAndPassword(email, pw);
+      // onAuthStateChanged will handle setUser
+    } catch(err) {
+      const msgs = {
+        "auth/user-not-found":    "Utilisateur introuvable.",
+        "auth/wrong-password":    "Mot de passe incorrect.",
+        "auth/invalid-email":     "Email invalide.",
+        "auth/too-many-requests": "Trop de tentatives. Réessayez plus tard.",
+      };
+      setPwErr(msgs[err.code]||"Erreur de connexion.");
+    }
+    setPwLoading(false);
+  }
+
+  function doLogout() {
+    firebase.auth().signOut();
+    setUser(null); setEmail(""); setPw(""); setPwErr("");
   }
 
   // ── LOGIN ──────────────────────────────────────────────────────────────────
+  if(!authReady) return (
+    <div className="login">
+      <div style={{color:"#fff",fontSize:14,textAlign:"center"}}>⏳ Chargement...</div>
+    </div>
+  );
+
   if(!user) return (
     <div className="login">
       <div className="login-box">
         <div className="login-logo">
-          <h1>💰 Dépenses Équipe SGE</h1>
+          <h1>💰 Dépenses Équipe</h1>
           <p>Caisse individuelle · Suivi partagé</p>
         </div>
-        {!loginStep ? (
-          <div className="profiles">
-            {USERS.map(u=>(
-              <button key={u.id} className={"pbtn"+(u.role==="admin"?" adm":"")} onClick={()=>{setLoginStep(u);setPw("");setPwErr(false);}}>
-                <div className={"pav "+(u.role==="admin"?"a":"m")}>{u.avatar}</div>
-                <div>
-                  <div className="pname">{u.name}</div>
-                  <div className="prole">{u.role==="admin"?"Administrateur":"Membre"}</div>
-                </div>
-                <span style={{marginLeft:"auto",color:"#9CA3AF",fontSize:16}}>›</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div>
-            <button className="pw-back" onClick={()=>setLoginStep(null)}>← Retour</button>
-            <div style={{fontSize:15,fontWeight:700,color:"var(--gray-9)",marginBottom:2}}>{loginStep.avatar} {loginStep.name}</div>
-            <div style={{fontSize:12,color:"var(--gray-5)",marginBottom:14}}>Entrez votre mot de passe</div>
-            <input autoFocus type="password" className={"inp"+(pwErr?" err":"")} placeholder="••••••••"
-              value={pw} onChange={e=>{setPw(e.target.value);setPwErr(false);}}
-              onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{marginBottom:pwErr?0:12}}/>
-            {pwErr&&<div className="errmsg" style={{marginBottom:10}}>Mot de passe incorrect.</div>}
-            <button className="btn btn-blue w-full" onClick={doLogin} style={{marginTop:pwErr?10:0}}>Se connecter →</button>
-          </div>
-        )}
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--gray-5)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:5}}>Email</div>
+          <input
+            type="email"
+            className={"inp"+(pwErr?" err":"")}
+            placeholder="votre@email.com"
+            value={email}
+            onChange={e=>{setEmail(e.target.value);setPwErr("");}}
+            onKeyDown={e=>e.key==="Enter"&&doLogin()}
+            style={{marginBottom:10}}
+            autoFocus
+          />
+          <div style={{fontSize:11,fontWeight:700,color:"var(--gray-5)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:5}}>Mot de passe</div>
+          <input
+            type="password"
+            className={"inp"+(pwErr?" err":"")}
+            placeholder="••••••••"
+            value={pw}
+            onChange={e=>{setPw(e.target.value);setPwErr("");}}
+            onKeyDown={e=>e.key==="Enter"&&doLogin()}
+            style={{marginBottom:pwErr?8:14}}
+          />
+          {pwErr && <div className="errmsg" style={{marginBottom:12}}>{pwErr}</div>}
+          <button className="btn btn-blue w-full" onClick={doLogin} disabled={pwLoading}>
+            {pwLoading?"Connexion en cours...":"Se connecter →"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -726,7 +770,7 @@ function App() {
       {/* TOPBAR */}
       <div className="topbar">
         <div className="tbi">
-          <div className="tb-logo">💰 Dépenses Équipe SGE</div>
+          <div className="tb-logo">💰 Dépenses Équipe</div>
           <div className="tb-right">
             {isAdmin && <button className="btn btn-green btn-sm" onClick={()=>setShowVir(true)} title="Virement"><span className="hide-xs">💸 </span>Virement</button>}
             <button className="btn btn-blue btn-sm" onClick={()=>setShowExp(true)} title="Dépense">+ <span className="hide-xs">Dépense</span></button>
@@ -736,7 +780,7 @@ function App() {
               <div className="tb-role">{isAdmin?"Admin":"Membre"}</div>
             </div>
             <button className="btn btn-ghost btn-sm btn-icon" title="Déconnexion"
-              onClick={()=>{localStorage.removeItem("dp_s");setUser(null);}}>⏏</button>
+              onClick={doLogout}>⏏</button>
           </div>
         </div>
       </div>
