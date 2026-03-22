@@ -30,7 +30,9 @@
     const FB = {
       getExp: () => db.ref("dp_expenses").once("value").then(s => toArr(s.val())),
       addExp: e  => db.ref("dp_expenses/"+String(e.id)).set(e),
-      delExp: id => db.ref("dp_expenses/"+String(id)).remove(),
+      delExp: id  => db.ref("dp_expenses/"+String(id)).remove(),
+      updExp: exp => db.ref("dp_expenses/"+String(exp.id)).update(exp),
+      updExp: e  => db.ref("dp_expenses/"+String(e.id)).update(e),
       getVir: () => db.ref("dp_virements").once("value").then(s => toArr(s.val())),
       addVir: v  => db.ref("dp_virements/"+String(v.id)).set(v),
       delVir: id => db.ref("dp_virements/"+String(id)).remove(),
@@ -247,14 +249,14 @@ const USERS = [
 function getUserByUID(uid) { return USERS.find(u=>u.id===uid)||null; }
 
 const CATS = [
-  { id:"siege",       label:"Frais Siège",   icon:"🏢", color:"#2563EB" },
-  { id:"atelier",     label:"Frais Atelier", icon:"🔧", color:"#7C3AED" },
-  { id:"projets",     label:"Frais Projets", icon:"📋", color:"#059669" },
-  { id:"essence",     label:"Essence",       icon:"⛽", color:"#D97706" },
-  { id:"maintenance", label:"Maintenance",   icon:"🚘", color:"#DC2626" },
+  { id:"siege",       label:"Frais Siège",   icon:"🏬", color:"#2563EB" },
+  { id:"atelier",     label:"Frais Atelier", icon:"🏪", color:"#7C3AED" },
+  { id:"projets",     label:"Frais Projets", icon:"🏗", color:"#059669" },
+  { id:"essence",     label:"Essence",       icon:"⛽️", color:"#D97706" },
+  { id:"maintenance", label:"Maintenance",   icon:"🛠", color:"#DC2626" },
   { id:"deplacement", label:"Déplacements",  icon:"✈️", color:"#0284C7" },
   { id:"repas",       label:"Repas",         icon:"🍽️", color:"#EA580C" },
-  { id:"other",       label:"Autre",         icon:"📦", color:"#6B7280" },
+  { id:"other",       label:"Autres",        icon:"📦", color:"#6B7280" },
 ];
 
 function fmt(n)  { return new Intl.NumberFormat("fr-DZ",{maximumFractionDigits:0}).format(n||0)+" DA"; }
@@ -587,6 +589,8 @@ function App() {
   const [filterCat, setFilterCat] = useState("all");
   const [selMember, setSelMember] = useState(null);
   const [showExp,   setShowExp]   = useState(false);
+  const [editingExp, setEditingExp] = useState(null); // null | expense object
+  const [editExp,   setEditExp]   = useState(null); // expense being edited
   const [rpPeriod,  setRpPeriod]  = useState("mensuel"); // quotidien|hebdo|mensuel|annuel
   const [rpOffset,  setRpOffset]  = useState(0); // 0=current, -1=previous, etc.
   const [showVir,   setShowVir]   = useState(false);
@@ -650,6 +654,30 @@ function App() {
     setLoading(true);
     try { await FB.addExp(e); await load(); showToast("✅ Dépense ajoutée"); }
     catch(err) { setExpenses(p=>p.filter(x=>String(x.id)!==String(e.id))); showToast("❌ "+err.message); }
+    setLoading(false);
+  }
+
+  async function updateExpense() {
+    if(!expForm.label.trim()||!expForm.amount||isNaN(parseFloat(expForm.amount))) return;
+    const updated = {...editExp, label:expForm.label.trim(), amount:parseFloat(expForm.amount), cat:expForm.cat, date:expForm.date, note:expForm.note||""};
+    setExpenses(p=>p.map(e=>String(e.id)===String(editExp.id)?updated:e));
+    setEditExp(null);
+    setExpForm({label:"",amount:"",cat:"siege",date:new Date().toISOString().slice(0,10),note:""});
+    setLoading(true);
+    try { await FB.updExp(updated); await load(); showToast("✏️ Dépense modifiée"); }
+    catch(err) { await load(); showToast("❌ "+err.message); }
+    setLoading(false);
+  }
+
+  async function updateExpense() {
+    if(!expForm.label.trim()||!expForm.amount||isNaN(parseFloat(expForm.amount))) return;
+    const updated = {...editingExp, label:expForm.label.trim(), amount:parseFloat(expForm.amount), cat:expForm.cat, date:expForm.date, note:expForm.note||""};
+    setExpenses(p=>p.map(e=>String(e.id)===String(updated.id)?updated:e));
+    setShowExp(false); setEditingExp(null);
+    setExpForm({label:"",amount:"",cat:"siege",date:new Date().toISOString().slice(0,10),note:""});
+    setLoading(true);
+    try { await FB.updExp(updated); await load(); showToast("✏️ Dépense modifiée"); }
+    catch(err) { await load(); showToast("❌ "+err.message); }
     setLoading(false);
   }
 
@@ -773,7 +801,7 @@ function App() {
           <div className="tb-logo">💰 Dépenses Équipe SGE</div>
           <div className="tb-right">
             {isAdmin && <button className="btn btn-green btn-sm" onClick={()=>setShowVir(true)} title="Virement"><span className="hide-xs">💸 </span>Virement</button>}
-            <button className="btn btn-blue btn-sm" onClick={()=>setShowExp(true)} title="Dépense">+ <span className="hide-xs">Dépense</span></button>
+            <button className="btn btn-blue btn-sm" onClick={()=>{setEditingExp(null);setExpForm({label:"",amount:"",cat:"siege",date:new Date().toISOString().slice(0,10),note:""});setShowExp(true);}} title="Dépense">+ <span className="hide-xs">Dépense</span></button>
             {isAdmin && <button className="btn btn-ghost btn-sm btn-icon" onClick={exportCSV} title="Export CSV">⬇</button>}
             <div style={{textAlign:"right"}}>
               <div className="tb-name">{user.avatar} {user.name}</div>
@@ -927,7 +955,8 @@ function App() {
                       <div className="exp-amt" style={{color:c.color}}>{fmt(exp.amount)}</div>
                       {canDel&&(
                         <div className="exp-acts">
-                          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delExpense(exp.id)}>🗑️</button>
+                          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>{setEditExp(exp);setExpForm({label:exp.label,amount:exp.amount,cat:exp.cat,date:exp.date,note:exp.note||""});}} title="Modifier">✏️</button>
+                      <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>delExpense(exp.id)} title="Supprimer">🗑️</button>
                         </div>
                       )}
                     </div>
@@ -986,10 +1015,10 @@ function App() {
         expenses, virements, isAdmin, user, rpPeriod, setRpPeriod, rpOffset, setRpOffset, fmt, fmtS
       })}
       {/* FORM DÉPENSE */}
-      {showExp && (
+      {(showExp||editExp) && (
         <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowExp(false)}>
           <div className="modal">
-            <div className="modal-title">+ Nouvelle dépense</div>
+            <div className="modal-title">{editExp?"✏️ Modifier la dépense":"+ Nouvelle dépense"}</div>
             <div className="fg">
               <label className="fl">Catégorie</label>
               <div className="cat-pick">
@@ -1021,8 +1050,10 @@ function App() {
               <input className="inp" placeholder="Précisions..." value={expForm.note} onChange={e=>setExpForm(f=>({...f,note:e.target.value}))}/>
             </div>
             <div className="mf">
-              <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setShowExp(false)}>Annuler</button>
-              <button className="btn btn-green" style={{flex:2}} onClick={addExpense} disabled={loading}>{loading?"Envoi...":"Ajouter ✓"}</button>
+              <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowExp(false);setEditExp(null);setExpForm({label:"",amount:"",cat:"siege",date:new Date().toISOString().slice(0,10),note:""});}}>Annuler</button>
+              <button className="btn btn-green" style={{flex:2}} onClick={editExp?updateExpense:addExpense} disabled={loading}>
+                {loading?"Envoi...":editExp?"Enregistrer ✓":"Ajouter ✓"}
+              </button>
             </div>
           </div>
         </div>
